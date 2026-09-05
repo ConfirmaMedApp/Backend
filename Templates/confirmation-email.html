@@ -1,0 +1,109 @@
+﻿<!DOCTYPE html>
+<html lang="es" xmlns="http://www.w3.org/1999/xhtml" xmlns:o="urn:schemas-microsoft-com:office:office">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="x-apple-disable-message-reformatting">
+    <title>Confirmación de Cita</title>
+    <style>
+        body { margin: 0; padding: 0; width: 100% !important; -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%; }
+        img { border: 0; outline: none; text-decoration: none; display: block; }
+
+        @media only screen and (max-width: 600px) {
+            .email-container { width: 100% !important; margin: 0 !important; }
+            .content-padding { padding: 20px 15px !important; }
+            .mobile-font { font-size: 16px !important; }
+            .header-text { font-size: 24px !important; }
+        }
+    </style>
+</head>
+<body style="margin: 0; padding: 0; background-color: #f4f7f6; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; color: #333333;">
+
+<table border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #f4f7f6;">
+    <tr>
+        <td align="center" style="padding: 40px 10px;">
+
+            <table class="email-container" border="0" cellpadding="0" cellspacing="0" width="600" style="background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.05);">
+
+                <tr>
+                    <td align="center" style="padding: 40px 40px 20px 40px; background-color: #ffffff;">
+                        <img src="{{OfficeBrandUrl}}" alt="{{OfficeName}}" width="150" style="max-width: 150px; height: auto; display: block; border: 0;" />
+                    </td>
+                </tr>
+
+                <tr>
+                    <td class="content-padding" style="padding: 0 40px 10px 40px; text-align: center;">
+                        <h1 class="header-text" style="margin: 0; font-size: 26px; font-weight: 700; color: #1a1a1a;">¡Tu cita está confirmada!</h1>
+                        <p style="margin: 20px 0 10px; font-size: 16px; line-height: 1.6; color: #555555;">
+                            Hola <strong>{{ToName}}</strong>,<br>
+                            Hemos reservado tu espacio exitosamente. Aquí tienes los detalles:
+                        </p>
+                    </td>
+                </tr>
+
+                <tr>
+                    <td style="padding: 10px 40px;">
+                        <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f8f9fb; border-radius: 8px; border: 1px solid #eef1f5;">
+                            <tr>
+                                <td style="padding: 20px;">
+                                    <table width="100%" cellpadding="0" cellspacing="0">
+                                        <tr>
+                                            <td width="30" valign="top" style="padding-bottom: 15px; font-size: 20px;">📅</td>
+                                            <td style="padding-bottom: 15px; font-size: 16px; color: #333; font-weight: 600;">
+                                                <span style="display: block; font-size: 12px; color: #888; text-transform: uppercase; letter-spacing: 1px; font-weight: normal;">Fecha</span>
+                                                {{DateAppointment}}
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td width="30" valign="top" style="padding-bottom: 0; font-size: 20px;">⏰</td>
+                                            <td style="padding-bottom: 0; font-size: 16px; color: #333; font-weight: 600;">
+                                                <span style="display: block; font-size: 12px; color: #888; text-transform: uppercase; letter-spacing: 1px; font-weight: normal;">Horario</span>
+                                                {{StartHour}} - {{EndHour}}
+                                            </td>
+                                        </tr>
+                                    </table>
+                                </td>
+                            </tr>
+                        </table>
+                    </td>
+                </tr>
+
+                <tr>
+                    <td style="padding: 20px 40px 10px;">
+                        <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #e3f2fd; border-radius: 6px; border-left: 4px solid #2196f3;">
+                            <tr>
+                                <td style="padding: 15px;">
+                                    <p style="margin: 0; font-size: 14px; color: #0d47a1; line-height: 1.5;">
+                                        <strong>ℹ️ Importante:</strong> Por favor preséntate con al menos <strong>10 minutos de anticipación</strong> para completar el registro.
+                                    </p>
+                                </td>
+                            </tr>
+                        </table>
+                    </td>
+                </tr>
+
+                <tr>
+                    <td style="padding: 20px 40px 40px; text-align: center;">
+                        <hr style="border: none; border-top: 1px solid #eeeeee; margin: 20px 0;" />
+                        <p style="margin: 0; font-size: 14px; color: #666; font-weight: bold;">{{OfficeName}}</p>
+                        <p style="margin: 5px 0 0; font-size: 13px; color: #888;">NIT: {{OfficeNit}}</p>
+                        <p style="margin: 5px 0 0; font-size: 13px; color: #888;">📍 {{OfficeAddress}}</p>
+                    </td>
+                </tr>
+
+            </table>
+            <table border="0" cellpadding="0" cellspacing="0" width="100%">
+                <tr>
+                    <td align="center" style="padding-top: 20px; color: #999999; font-size: 12px;">
+                        <p style="margin: 0;">Este es un mensaje automático, por favor no responder.</p>
+                        <p style="margin: 5px 0;">&copy; {{OfficeName}}. Todos los derechos reservados.</p>
+                    </td>
+                </tr>
+            </table>
+
+        </td>
+    </tr>
+</table>
+
+</body>
+</html>

@@ -1,0 +1,90 @@
+name: Build & Deploy to Cloud Run (Artifact Registry)
+
+on:
+  push:
+    branches: ["main"]
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      # -----------------------------
+      # Checkout
+      # -----------------------------
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # -----------------------------
+      # Semantic Version
+      # -----------------------------
+      - name: Git Semantic Version
+        id: version
+        uses: PaulHatch/semantic-version@v4.0.3
+        with:
+          major_pattern: "major:"
+          minor_pattern: "feat:"
+          format: "${major}.${minor}.${patch}"
+
+      # -----------------------------
+      # Auth GCP
+      # -----------------------------
+      - name: Auth Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Setup gcloud
+        uses: google-github-actions/setup-gcloud@v2
+
+      # -----------------------------
+      # Docker auth for Artifact Registry (REGIÓN CORRECTA)
+      # -----------------------------
+      - name: Configure Docker for Artifact Registry
+        run: |
+          gcloud auth configure-docker us-east1-docker.pkg.dev --quiet
+
+      # -----------------------------
+      # Build Docker Image
+      # -----------------------------
+      - name: Build Docker Image
+        env:
+          NEW_VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          docker build --no-cache \
+            -t us-east1-docker.pkg.dev/confirmamed/confirmamedmainbackend/confirmamed-api:${NEW_VERSION} \
+            -t us-east1-docker.pkg.dev/confirmamed/confirmamedmainbackend/confirmamed-api:latest .
+
+      # -----------------------------
+      # Push Docker Image
+      # -----------------------------
+      - name: Push Docker Image
+        env:
+          NEW_VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          docker push us-east1-docker.pkg.dev/confirmamed/confirmamedmainbackend/confirmamed-api:${NEW_VERSION}
+          docker push us-east1-docker.pkg.dev/confirmamed/confirmamedmainbackend/confirmamed-api:latest
+
+      # -----------------------------
+      # Deploy to Cloud Run
+      # -----------------------------
+      - name: Deploy to Cloud Run
+        env:
+          DB_CONNECTION: ${{ secrets.DB_CONNECTION_DEV }}
+          JWT_ISSUER: ${{ secrets.JWT_ISSUER_DEV }}
+          JWT_AUDIENCE: ${{ secrets.JWT_AUDIENCE_DEV }}
+          JWT_SECRET_KEY: ${{ secrets.JWT_SECRET_KEY_DEV }}
+          JWT_EXPIRE_MINUTES: ${{ secrets.JWT_EXPIRE_MINUTES_DEV }}
+          MAILER_SEND_API_KEY: ${{ secrets.MAILER_SEND_API_KEY_DEV }}
+          MAILER_SEND_FROM: ${{ secrets.MAILER_SEND_FROM_DEV }}
+          MAILER_SEND_FROM_NAME: ${{ secrets.MAILER_SEND_FROM_NAME_DEV }}
+        run: |
+          gcloud run deploy confirmamed-api \
+            --image us-east1-docker.pkg.dev/confirmamed/confirmamedmainbackend/confirmamed-api:latest \
+            --platform managed \
+            --region us-central1 \
+            --allow-unauthenticated \
+            --port 8080 \
+            --set-env-vars ASPNETCORE_ENVIRONMENT=Production,ConnectionStrings__DefaultDevConnection="${DB_CONNECTION}",Jwt__Issuer="${JWT_ISSUER}",Jwt__Audience="${JWT_AUDIENCE}",Jwt__Key="${JWT_SECRET_KEY}",Jwt__Expire__Minutes="${JWT_EXPIRE_MINUTES}",Mailer__Send__ApiKey="${MAILER_SEND_API_KEY}",Mailer__Send__From="${MAILER_SEND_FROM}",Mailer__Send__From__Name="${MAILER_SEND_FROM_NAME}"

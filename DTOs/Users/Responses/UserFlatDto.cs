@@ -15,4 +15,5 @@ public class UserFlatDto
     public string DoctorLastName { get; set; } = string.Empty;
     public string DoctorDocument { get; set; } = string.Empty;
     public bool Status { get; set; }
+    public string Role { get; set; } = string.Empty;
 }

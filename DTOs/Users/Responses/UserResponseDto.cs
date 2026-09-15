@@ -13,4 +13,5 @@ public class UserResponseDto
     public OfficeMinimalDto Office { get; set; } = new();
     public DoctorMinimalDto Doctor { get; set; } = new();
     public bool Status { get; set; }
+    public string Role { get; set; } = string.Empty;
 }

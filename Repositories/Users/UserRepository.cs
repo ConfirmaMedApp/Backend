@@ -10,7 +10,7 @@ public class UserRepository(IDbConnectionFactory dbConnectionFactory) : Reposito
 {
     public Task<UserFlatDto?> CreateAsync(User user)
     {
-        const string command = "SELECT * FROM create_user(@Name, @Lastname, @Email, @Username, @Password, @OfficeId, @DoctorId, @Status);";
+        const string command = "SELECT * FROM create_user(@Name, @Lastname, @Email, @Username, @Password, @OfficeId, @DoctorId, @Status, @Role);";
         return ExecuteSafeAsync(async conn =>
         {
             user.Password = BCrypt.Net.BCrypt.HashPassword(user.Password, 10);
@@ -24,7 +24,8 @@ public class UserRepository(IDbConnectionFactory dbConnectionFactory) : Reposito
                 user.Password,
                 user.OfficeId,
                 user.DoctorId,
-                user.Status
+                user.Status,
+                user.Role
             });
 
             return await GetByIdAsync(newUser);
@@ -69,7 +70,7 @@ public class UserRepository(IDbConnectionFactory dbConnectionFactory) : Reposito
 
     public Task<UserFlatDto?> UpdateAsync(User user)
     {
-        const string command = "SELECT * FROM update_user(@Id, @Name, @Lastname, @Email, @Username, @OfficeId, @DoctorId, @Status);";
+        const string command = "SELECT * FROM update_user(@Id, @Name, @Lastname, @Email, @Username, @OfficeId, @DoctorId, @Status, @Role);";
         return ExecuteSafeAsync(async conn =>
         {    
             var updatedUser = await conn.ExecuteScalarAsync<int>(command, new
@@ -82,7 +83,8 @@ public class UserRepository(IDbConnectionFactory dbConnectionFactory) : Reposito
                 user.Password,
                 user.OfficeId,
                 user.DoctorId,
-                user.Status
+                user.Status,
+                user.Role
             });
             return await GetByIdAsync(updatedUser);
         }, dbConnectionFactory);

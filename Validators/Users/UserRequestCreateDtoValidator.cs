@@ -40,5 +40,10 @@ public class UserRequestCreateDtoValidator : AbstractValidator<UserRequestCreate
 
         RuleFor(x => x.Status)
             .NotNull().WithMessage("El estado es obligatorio");
+
+        RuleFor(x => x.Role)
+            .NotEmpty().WithMessage("El rol es obligatorio")
+            .Must(role => new[] { "admin", "secretaria", "doctor" }.Contains(role))
+            .WithMessage("El rol debe ser admin, secretaria o doctor");
     }
 }

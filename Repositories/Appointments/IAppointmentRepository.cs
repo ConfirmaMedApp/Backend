@@ -20,6 +20,7 @@ public interface IAppointmentRepository
     Task<AppointmentFlatDto?> RescheduleToSlotAsync(int oldAppointmentId, int newAppointmentId);
     Task<IEnumerable<(DateOnly CalendarDate, string StatusDay, string Color)>> GetOccupationAppointmentsPerMonthAsync(int year, int month, int? doctorId);
     Task<IEnumerable<AppointmentFlatDto>> GetAllAsync(string dateSelected, int? specialityId, int? doctorId, bool? isOccuped, int? limit, int? offset);
+    Task<IEnumerable<AppointmentFlatDto>> GetAllByUserAsync(string dateSelected, int userId, int? specialityId, bool? isOccuped, int? limit, int? offset);
     Task<AppointmentFlatDto?> GetByIdAsync(int id);
     Task<AppointmentFlatDto?> AssignAppointmentAsync(int appointmentId, int patientId);
     Task<IEnumerable<AppointmentFlatDto>> GetByPatientNeedAppointmentAsync(int specialityId, string startHour, string dateSelected);

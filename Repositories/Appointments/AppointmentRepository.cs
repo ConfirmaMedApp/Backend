@@ -1,5 +1,4 @@
 ﻿using Backend.DTOs.Appointments.Responses;
-using Backend.Entities.Appointments;
 using Backend.Persistence;
 using Dapper;
 
@@ -186,5 +185,24 @@ public class AppointmentRepository(IDbConnectionFactory dbConnectionFactory) : R
         const string query = "SELECT * FROM has_patient_assigned(@OldAppointmentId);";
         
         return ExecuteSafeAsync(async conn => await conn.ExecuteScalarAsync<bool>(query, new { OldAppointmentId = oldAppointmentId }), dbConnectionFactory);
+    }
+
+    public Task<IEnumerable<AppointmentFlatDto>> GetAllByUserAsync(string dateSelected, int userId, int? specialityId, bool? isOccuped, int? limit, int? offset)
+    {
+        const string query = "SELECT * FROM get_all_appointments_by_user(@DateSelected::date, @UserId, @SpecialityId, @IsOccuped, @Limit, @Offset);";
+
+        return ExecuteSafeAsync(async conn =>
+        {
+            var appointments = await conn.QueryAsync<AppointmentFlatDto>(query, new
+            {
+                DateSelected = dateSelected,
+                UserId = userId,
+                SpecialityId = specialityId,
+                IsOccuped = isOccuped,
+                Limit = limit,
+                Offset = offset
+            });
+            return appointments;
+        }, dbConnectionFactory);
     }
 }

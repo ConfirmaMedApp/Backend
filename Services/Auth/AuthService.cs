@@ -24,7 +24,8 @@ public class AuthService(IUserRepository userRepository, IConfiguration configur
         {
             Id = user.Id,
             FullName = $"{user.Name} {user.Lastname}",
-            UserName = dto.UserName
+            UserName = dto.UserName,
+            Role = user.Role
         };
 
         authResponse.Token = GenerateJwtToken(authResponse);
@@ -69,6 +70,7 @@ public class AuthService(IUserRepository userRepository, IConfiguration configur
 
             var userId = jwtToken.Claims.First(c => c.Type == ClaimTypes.NameIdentifier).Value;
             var name = jwtToken.Claims.First(c => c.Type == ClaimTypes.Name).Value;
+            var role = jwtToken.Claims.First(c => c.Type == ClaimTypes.Role).Value;
 
             if (!int.TryParse(userId, out var userIdParsed))
             {
@@ -79,6 +81,7 @@ public class AuthService(IUserRepository userRepository, IConfiguration configur
             {
                 Id = userIdParsed,
                 FullName = name,
+                Role = role,
             };
 
             return response;
@@ -102,7 +105,8 @@ public class AuthService(IUserRepository userRepository, IConfiguration configur
         var claims = new[]
         {
             new Claim(ClaimTypes.NameIdentifier, dto.Id.ToString()),
-            new Claim(ClaimTypes.Name, dto.FullName)
+            new Claim(ClaimTypes.Name, dto.FullName),
+            new Claim(ClaimTypes.Role, dto.Role)
         };
 
         var expireMinutes = configuration.GetValue<int?>("Jwt:ExpireMinutes")

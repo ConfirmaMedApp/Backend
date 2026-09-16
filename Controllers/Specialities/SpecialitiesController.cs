@@ -9,10 +9,18 @@ namespace Backend.Controllers.Specialities;
 [Authorize]
 public class SpecialitiesController(ISpecialityService specialityService) : BaseControllerCustom
 {
-    [AllowAnonymous]
     [HttpGet(Name = "GetAllSpecialities")]
     [EnableRateLimiting("UserPolicy")]
     public async Task<IActionResult> GetAll([FromQuery] int? limit = 5, [FromQuery] int? offset = 0, [FromQuery] bool? status = true, [FromQuery] string search = "")
+    {
+        var results = await specialityService.GetAllAsync(limit, offset, status, search);
+        return OkResponse(results);
+    }
+
+    [AllowAnonymous]
+    [HttpGet("public/usage", Name = "GetAllSpecialitiesPublic")]
+    [EnableRateLimiting("UserPolicy")]
+    public async Task<IActionResult> GetAllPublic([FromQuery] int? limit = 5, [FromQuery] int? offset = 0, [FromQuery] bool? status = true, [FromQuery] string search = "")
     {
         var results = await specialityService.GetAllAsync(limit, offset, status, search);
         return OkResponse(results);

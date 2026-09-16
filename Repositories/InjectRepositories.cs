@@ -1,5 +1,6 @@
 ﻿using Backend.Repositories.Appointments;
 using Backend.Repositories.AppointmentsAnnexes;
+using Backend.Repositories.AppointmentsNotes;
 using Backend.Repositories.Doctors;
 using Backend.Repositories.DoctorsHasSpecialities;
 using Backend.Repositories.DocumentTypes;
@@ -36,6 +37,8 @@ public static class InjectRepositories
         services.AddTransient<IAppointmentRepository, AppointmentRepository>();
 
         services.AddTransient<IAppointmentAnnexRepository, AppointmentAnnexRepository>();
+
+        services.AddTransient<IAppointmentNoteRepository, AppointmentNoteRepository>();
 
         return services;
     }

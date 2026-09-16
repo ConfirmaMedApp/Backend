@@ -13,6 +13,7 @@ using Backend.Services.Users;
 using Backend.Services.MailerSend;
 using Backend.Services.CloudinaryUpload;
 using Backend.Services.AppointmentsAnnexes;
+using Backend.Services.AppointmentsNotes;
 
 namespace Backend.Services;
 
@@ -48,6 +49,8 @@ public static class InjectServices
         services.AddScoped<ICloudinaryService, CloudinaryService>();
 
         services.AddScoped<IAppointmentAnnexService, AppointmentAnnexService>();
+
+        services.AddScoped<IAppointmentNoteService, AppointmentNoteService>();
 
         return services;
     }

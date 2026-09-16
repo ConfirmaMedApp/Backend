@@ -28,6 +28,9 @@ using Backend.Entities.Offices;
 using Backend.Entities.Patients;
 using Backend.Entities.Specialities;
 using Backend.Entities.Users;
+using Backend.Entities.AppointmentsNotes;
+using Backend.DTOs.AppointmentsNotes.Responses;
+using Backend.DTOs.AppointmentsNotes.Requests;
 
 namespace Backend.MappingProfile;
 
@@ -178,5 +181,24 @@ public class BackendProfile : Profile
                 }
             ));
         CreateMap<AppointmentAnnex, AppointmentAnnexRequestCreateDto>().ReverseMap();
+
+        CreateMap<AppointmentNote, AppointmentNoteResponseDto>().ReverseMap();
+        CreateMap<AppointmentNoteFlatDto, AppointmentNoteResponseDto>()
+            .ForMember(dest => dest.User, opt => opt.MapFrom(src => 
+                new UserMinimalDto
+                {
+                    Id = src.UserId,
+                    Name = src.UserName,
+                    Lastname = src.UserLastname,
+                    Role = src.UserRole
+                }))
+            .ForMember(dest => dest.Appointment, opt => opt.MapFrom(src => 
+                new AppointmentMinimalDto
+                {
+                    Id = src.AppointmentId,
+                    DateAppointment = src.AppointmentDateAppointment,
+                    StartHour = src.AppointmentStartHour
+                }));
+        CreateMap<AppointmentNote, AppointmentNoteRequestCreateDto>().ReverseMap();
     }
 }

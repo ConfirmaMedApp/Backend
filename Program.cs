@@ -74,7 +74,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 builder.Services.AddAuthorization();
 
 // CORS
-builder.Services.AddCorsService();
+builder.Services.AddCorsService(builder.Environment);
 
 // Postgres Health Check
 builder.Services.AddHealthChecks()

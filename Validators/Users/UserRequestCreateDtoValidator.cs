@@ -36,7 +36,8 @@ public class UserRequestCreateDtoValidator : AbstractValidator<UserRequestCreate
             .MaximumLength(100).WithMessage("La contrasña no debe exceder los 100 caracteres");
 
         RuleFor(x => x.DoctorId)
-            .GreaterThan(0).WithMessage("El id de doctor debe ser valido");
+            .GreaterThan(0).When(x => x.DoctorId.HasValue)
+            .WithMessage("El id de doctor debe ser valido");
 
         RuleFor(x => x.Status)
             .NotNull().WithMessage("El estado es obligatorio");

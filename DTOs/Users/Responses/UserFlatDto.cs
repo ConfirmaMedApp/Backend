@@ -10,10 +10,10 @@ public class UserFlatDto
     public int OfficeId { get; set; }
     public string OfficeName { get; set; } = string.Empty;
     public string OfficeNit { get; set; } = string.Empty;
-    public int DoctorId { get; set; }
-    public string DoctorName { get; set; } = string.Empty;
-    public string DoctorLastName { get; set; } = string.Empty;
-    public string DoctorDocument { get; set; } = string.Empty;
+    public int? DoctorId { get; set; }
+    public string? DoctorName { get; set; }
+    public string? DoctorLastName { get; set; }
+    public string? DoctorDocument { get; set; }
     public bool Status { get; set; }
     public string Role { get; set; } = string.Empty;
 }

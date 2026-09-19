@@ -68,13 +68,15 @@ public class BackendProfile : Profile
                     Nit = src.OfficeNit
                 }))
             .ForMember(dest => dest.Doctor, opt => opt.MapFrom(src =>
-                new DoctorMinimalDto
-                {
-                    Id = src.DoctorId,
-                    Name = src.DoctorName,
-                    LastName = src.DoctorLastName,
-                    Document = src.DoctorDocument
-                }));
+                src.DoctorId.HasValue
+                    ? new DoctorMinimalDto
+                    {
+                        Id = src.DoctorId.Value,
+                        Name = src.DoctorName ?? string.Empty,
+                        LastName = src.DoctorLastName ?? string.Empty,
+                        Document = src.DoctorDocument ?? string.Empty
+                    }
+                    : null));
         CreateMap<User, UserRequestCreateDto>().ReverseMap();
         CreateMap<User, UserRequestUpdateDto>().ReverseMap();
 

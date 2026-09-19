@@ -31,7 +31,8 @@ public class UserRequestUpdateDtoValidator : AbstractValidator<UserRequestUpdate
             .WithMessage("El nombre de usuario debe ser único");
 
         RuleFor(x => x.DoctorId)
-            .GreaterThan(0).WithMessage("El id de doctor debe ser valido");
+            .GreaterThan(0).When(x => x.DoctorId.HasValue)
+            .WithMessage("El id de doctor debe ser valido");
 
         RuleFor(x => x.Status)
             .NotNull().WithMessage("El estado es obligatorio");

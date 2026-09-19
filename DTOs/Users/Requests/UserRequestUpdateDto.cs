@@ -7,7 +7,7 @@ public class UserRequestUpdateDto
     public string Lastname { get; set; } = string.Empty;
     public string Email { get; set; } = string.Empty;
     public string Username { get; set; } = string.Empty;
-    public int DoctorId { get; set; }
+    public int? DoctorId { get; set; }
     public bool Status { get; set; }
     public string Role { get; set; } = string.Empty;
 }

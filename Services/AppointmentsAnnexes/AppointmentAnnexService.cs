@@ -15,9 +15,16 @@ public class AppointmentAnnexService(IAppointmentAnnexRepository appointmentAnne
     {
         var appointmentId = dtos[0].AppointmentId;
 
+        var appointment = await appointmentService.GetByIdAsync(appointmentId);
+        var patientDocument = appointment?.Patient?.Document;
+        if (string.IsNullOrWhiteSpace(patientDocument))
+            patientDocument = "sin-documento";
+
+        var folder = $"appointments/annexes/{patientDocument}/{appointmentId}";
+
         var tasks = dtos.Select(async dto =>
         {
-            var cloudinaryUrl = await cloudinaryService.UploadImageAsync(dto.File, $"/appointments/{appointmentId}");
+            var cloudinaryUrl = await cloudinaryService.UploadDocumentAsync(dto.File, folder);
 
             var appointmentAnnex = mapper.Map<AppointmentAnnex>(dto);
             appointmentAnnex.File = cloudinaryUrl;
@@ -26,10 +33,9 @@ public class AppointmentAnnexService(IAppointmentAnnexRepository appointmentAnne
             return await appointmentAnnexRepository.CreateAsync(appointmentAnnex);
         });
 
-        var results = await Task.WhenAll(tasks);
-        var appointment = await appointmentService.GetByIdAsync(appointmentId);
+        await Task.WhenAll(tasks);
 
-        return appointment;
+        return appointment ?? await appointmentService.GetByIdAsync(appointmentId);
     }
 
     public async Task<IEnumerable<AppointmentAnnexResponseDto>> GetAllAsync(int appointmentId)

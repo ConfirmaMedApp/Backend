@@ -1,6 +1,7 @@
 using Backend.Swagger;
 using Backend.Cors;
 using Backend.Entities.CloudinaryUpload;
+using Backend.Entities.Users;
 using Backend.Health;
 using Backend.Middlewares;
 using Backend.Persistence;
@@ -45,6 +46,11 @@ builder.Services.AddSingleton<IDbConnectionFactory>(_ => new DbConnectionFactory
 // Cloudinary
 builder.Services.Configure<CloudinarySettings>(
     builder.Configuration.GetSection("Cloudinary")
+);
+
+// User avatar presets
+builder.Services.Configure<UserAvatarPresetsSettings>(
+    builder.Configuration.GetSection("UserAvatarPresets")
 );
 
 // HttpClient

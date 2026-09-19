@@ -1,4 +1,4 @@
-﻿using Backend.DTOs.Users.Requests;
+using Backend.DTOs.Users.Requests;
 using Backend.Services.Users;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -14,6 +14,14 @@ public class UsersController(IUserService userService) : BaseControllerCustom
     public async Task<IActionResult> GetAll([FromQuery] int? limit, [FromQuery] int? offset, [FromQuery] bool? status, [FromQuery] string search = "")
     {
         var result = await userService.GetAllAsync(limit, offset, status, search);
+        return OkResponse(result);
+    }
+
+    [HttpGet("avatars/presets", Name = "GetUserAvatarPresets")]
+    [EnableRateLimiting("UserPolicy")]
+    public IActionResult GetAvatarPresets()
+    {
+        var result = userService.GetPresets();
         return OkResponse(result);
     }
 
@@ -38,6 +46,14 @@ public class UsersController(IUserService userService) : BaseControllerCustom
     public async Task<IActionResult> Update([FromBody] UserRequestUpdateDto dto)
     {
         var result = await userService.UpdateAsync(dto);
+        return OkResponse(result);
+    }
+
+    [HttpPut("{id:int}/avatar", Name = "UpdateUserAvatar")]
+    [EnableRateLimiting("UserPolicy")]
+    public async Task<IActionResult> UpdateAvatar(int id, [FromForm] UserAvatarRequestDto dto)
+    {
+        var result = await userService.UpdateAvatarAsync(id, dto);
         return OkResponse(result);
     }
 }

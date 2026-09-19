@@ -10,7 +10,7 @@ public class UserRepository(IDbConnectionFactory dbConnectionFactory) : Reposito
 {
     public Task<UserFlatDto?> CreateAsync(User user)
     {
-        const string command = "SELECT * FROM create_user(@Name, @Lastname, @Email, @Username, @Password, @OfficeId, @DoctorId, @Status, @Role);";
+        const string command = "SELECT * FROM create_user(@Name, @Lastname, @Email, @Username, @Password, @OfficeId, @DoctorId, @Status, @Role, @AvatarUrl);";
         return ExecuteSafeAsync(async conn =>
         {
             user.Password = BCrypt.Net.BCrypt.HashPassword(user.Password, 10);
@@ -25,7 +25,8 @@ public class UserRepository(IDbConnectionFactory dbConnectionFactory) : Reposito
                 user.OfficeId,
                 user.DoctorId,
                 user.Status,
-                user.Role
+                user.Role,
+                user.AvatarUrl
             });
 
             return await GetByIdAsync(newUser);
@@ -72,7 +73,7 @@ public class UserRepository(IDbConnectionFactory dbConnectionFactory) : Reposito
     {
         const string command = "SELECT * FROM update_user(@Id, @Name, @Lastname, @Email, @Username, @OfficeId, @DoctorId, @Status, @Role);";
         return ExecuteSafeAsync(async conn =>
-        {    
+        {
             var updatedUser = await conn.ExecuteScalarAsync<int>(command, new
             {
                 user.Id,
@@ -87,6 +88,16 @@ public class UserRepository(IDbConnectionFactory dbConnectionFactory) : Reposito
                 user.Role
             });
             return await GetByIdAsync(updatedUser);
+        }, dbConnectionFactory);
+    }
+
+    public Task<UserFlatDto?> UpdateAvatarAsync(int userId, string? avatarUrl)
+    {
+        const string command = "SELECT * FROM update_user_avatar(@Id, @AvatarUrl);";
+        return ExecuteSafeAsync(async conn =>
+        {
+            var updatedId = await conn.ExecuteScalarAsync<int>(command, new { Id = userId, AvatarUrl = avatarUrl });
+            return await GetByIdAsync(updatedId);
         }, dbConnectionFactory);
     }
 }

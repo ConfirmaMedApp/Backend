@@ -10,4 +10,5 @@ public class UserRequestCreateDto
     public int? DoctorId { get; set; }
     public bool Status { get; set; }
     public string Role { get; set; } = string.Empty;
+    public string? AvatarPresetKey { get; set; }
 }

@@ -10,6 +10,7 @@ public interface IUserRepository
     Task<User?> GetByUsernameAsync(string username);
     Task<UserFlatDto?> CreateAsync(User user);
     Task<UserFlatDto?> UpdateAsync(User user);
+    Task<UserFlatDto?> UpdateAvatarAsync(int userId, string? avatarUrl);
 
     // Validations
     Task<bool> IsUsernameAlreadyUsed(string username, int? userId = null);

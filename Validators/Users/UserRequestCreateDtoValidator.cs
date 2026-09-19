@@ -1,13 +1,16 @@
 ﻿using Backend.DTOs.Users.Requests;
+using Backend.Entities.Users;
 using Backend.Repositories.Users;
 using FluentValidation;
+using Microsoft.Extensions.Options;
 
 namespace Backend.Validators.Users;
 
 public class UserRequestCreateDtoValidator : AbstractValidator<UserRequestCreateDto>
 {
-    public UserRequestCreateDtoValidator(IUserRepository userRepository)
+    public UserRequestCreateDtoValidator(IUserRepository userRepository, IOptions<UserAvatarPresetsSettings> presetsOptions)
     {
+        var presets = presetsOptions.Value.Items;
         RuleFor(x => x.Name)
             .NotEmpty().WithMessage("El nombre es obligatorio")
             .MaximumLength(50).WithMessage("El nombre no debe exceder los 50 caracteres");
@@ -46,5 +49,12 @@ public class UserRequestCreateDtoValidator : AbstractValidator<UserRequestCreate
             .NotEmpty().WithMessage("El rol es obligatorio")
             .Must(role => new[] { "admin", "secretaria", "doctor" }.Contains(role))
             .WithMessage("El rol debe ser admin, secretaria o doctor");
+
+        When(x => !string.IsNullOrWhiteSpace(x.AvatarPresetKey), () =>
+        {
+            RuleFor(x => x.AvatarPresetKey!)
+                .Must(key => presets.ContainsKey(key) && !string.IsNullOrWhiteSpace(presets[key]))
+                .WithMessage("El avatar seleccionado no es válido");
+        });
     }
 }

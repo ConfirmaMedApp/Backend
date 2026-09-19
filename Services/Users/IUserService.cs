@@ -9,4 +9,6 @@ public interface IUserService
     Task<UserResponseDto?> GetByIdAsync(int id);
     Task<UserResponseDto?> CreateAsync(UserRequestCreateDto dto);
     Task<UserResponseDto?> UpdateAsync(UserRequestUpdateDto dto);
+    Task<UserResponseDto?> UpdateAvatarAsync(int userId, UserAvatarRequestDto dto);
+    IEnumerable<UserAvatarPresetDto> GetPresets();
 }

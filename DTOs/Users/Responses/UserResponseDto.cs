@@ -14,4 +14,5 @@ public class UserResponseDto
     public DoctorMinimalDto? Doctor { get; set; }
     public bool Status { get; set; }
     public string Role { get; set; } = string.Empty;
+    public string? AvatarUrl { get; set; }
 }

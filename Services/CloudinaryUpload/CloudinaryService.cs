@@ -38,7 +38,7 @@ public class CloudinaryService(IOptions<CloudinarySettings> config, ILogger<Clou
             var uploadParams = new ImageUploadParams
             {
                 File = new FileDescription(file.FileName, stream),
-                Folder = "appointments_annexes" + folder ?? "/",
+                Folder = string.IsNullOrWhiteSpace(folder) ? "/" : folder,
                 UseFilename = true,
                 UniqueFilename = true,
                 Overwrite = false
@@ -57,6 +57,53 @@ public class CloudinaryService(IOptions<CloudinarySettings> config, ILogger<Clou
         catch (Exception ex)
         {
             logger.LogError(ex, "Error inesperado al subir imagen");
+            throw;
+        }
+    }
+
+    public async Task<string> UploadDocumentAsync(IFormFile file, string? folder = null)
+    {
+        if (file.Length == 0)
+            throw new ArgumentException("El archivo está vacío");
+
+        var allowedTypes = new[]
+        {
+            "application/pdf",
+            "application/msword",
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            "application/vnd.ms-excel",
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            "text/plain"
+        };
+        if (!allowedTypes.Contains(file.ContentType.ToLower()))
+            throw new ArgumentException("El archivo debe ser un documento (PDF, Word, Excel o texto)");
+
+        try
+        {
+            using var stream = file.OpenReadStream();
+
+            var uploadParams = new RawUploadParams
+            {
+                File = new FileDescription(file.FileName, stream),
+                Folder = string.IsNullOrWhiteSpace(folder) ? "/" : folder,
+                UseFilename = true,
+                UniqueFilename = true,
+                Overwrite = false
+            };
+
+            var uploadResult = await cloudinary.UploadAsync(uploadParams);
+
+            if (uploadResult.Error != null)
+            {
+                logger.LogError("Error al subir documento a Cloudinary: {Error}", uploadResult.Error.Message);
+                throw new BadRequestException($"Error al subir el documento: {uploadResult.Error.Message}");
+            }
+
+            return uploadResult.SecureUrl.ToString();
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error inesperado al subir documento");
             throw;
         }
     }

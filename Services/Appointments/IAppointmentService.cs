@@ -20,4 +20,10 @@ public interface IAppointmentService
 
     Task SendReminderEmailAsync(PatientResponseDto patientResponseDto, OfficeResponseDto officeResponseDto,
         AppointmentResponseDto appointmentResponseDto);
+
+    Task<IEnumerable<PatientAttendedByDoctorResponseDto>> GetPatientsAttendedByDoctorAsync(
+        string? startDate,
+        string search,
+        int? limit,
+        int? offset);
 }

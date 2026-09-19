@@ -31,4 +31,11 @@ public interface IAppointmentRepository
     
     Task<bool> IsSlotAvailableAsync(int newAppointmentId);
     Task<bool> HasPatientAssignedAsync(int oldAppointmentId);
+
+    Task<IEnumerable<PatientAttendedByDoctorFlatDto>> GetPatientsAttendedByDoctorAsync(
+        int doctorId,
+        string? startDate,
+        string search,
+        int? limit,
+        int? offset);
 }

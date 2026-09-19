@@ -172,6 +172,31 @@ public class BackendProfile : Profile
                 }
             });
 
+        CreateMap<PatientAttendedByDoctorFlatDto, PatientAttendedByDoctorResponseDto>()
+            .ForMember(dest => dest.Appointment, opt => opt.MapFrom(src =>
+                new AppointmentMinimalDto
+                {
+                    Id = src.AppointmentId,
+                    DateAppointment = src.AppointmentDate,
+                    StartHour = src.AppointmentStartHour
+                }))
+            .ForMember(dest => dest.Doctor, opt => opt.MapFrom(src =>
+                new DoctorMinimalDto
+                {
+                    Id = src.DoctorId,
+                    Name = src.DoctorName,
+                    LastName = src.DoctorLastname,
+                    Document = src.DoctorDocument
+                }))
+            .ForMember(dest => dest.Patient, opt => opt.MapFrom(src =>
+                new PatientMinimalDto
+                {
+                    Id = src.PatientId,
+                    Name = src.PatientName,
+                    Lastname = src.PatientLastname,
+                    Document = src.PatientDocument
+                }));
+
         CreateMap<AppointmentAnnex, AppointmentAnnexResponseDto>().ReverseMap();
         CreateMap<AppointmentAnnexFlatDto, AppointmentAnnexResponseDto>()
             .ForMember(dest => dest.Appointment, opt => opt.MapFrom(src =>

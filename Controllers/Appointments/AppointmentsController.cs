@@ -84,4 +84,16 @@ public class AppointmentsController(IAppointmentService appointmentService) : Ba
         var appointments = await appointmentService.GetRecommendationsForPatientAsync(specialityId, dateSelected);
         return OkResponse(appointments);
     }
+
+    [HttpGet("doctor/attended-patients", Name = "GetPatientsAttendedByDoctor")]
+    [EnableRateLimiting("UserPolicy")]
+    public async Task<IActionResult> GetPatientsAttendedByDoctor(
+        [FromQuery] string? startDate,
+        [FromQuery] string? search,
+        [FromQuery] int? limit,
+        [FromQuery] int? offset)
+    {
+        var rows = await appointmentService.GetPatientsAttendedByDoctorAsync(startDate, search ?? string.Empty, limit, offset);
+        return OkResponse(rows);
+    }
 }

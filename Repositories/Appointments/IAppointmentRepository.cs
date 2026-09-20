@@ -26,7 +26,7 @@ public interface IAppointmentRepository
     Task<IEnumerable<AppointmentFlatDto>> GetByPatientNeedAppointmentAsync(int specialityId, string startHour, string dateSelected);
     Task<IEnumerable<AppointmentFlatDto>> GetRecommendationsForPatientAsync(int specialityId, string dateSelected);
     
-    Task<IEnumerable<AppointmentFlatDto>> GetAppointmentsForRemindersAsync(int hoursAhead);
+    Task<IEnumerable<int>> GetAppointmentsForRemindersAsync(int hoursAhead);
     Task MarkReminderAsSentAsync(int appointmentId, int hourWindow);
     
     Task<bool> IsSlotAvailableAsync(int newAppointmentId);
@@ -38,4 +38,9 @@ public interface IAppointmentRepository
         string search,
         int? limit,
         int? offset);
+
+    Task UpdateVideoRoomAsync(int appointmentId, string roomName, string roomUrl);
+    Task ClearVideoRoomAsync(int appointmentId);
+
+    Task<AppointmentVideoContextDto?> GetVideoContextAsync(int appointmentId);
 }

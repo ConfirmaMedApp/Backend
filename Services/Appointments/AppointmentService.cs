@@ -9,6 +9,7 @@ using Backend.Exceptions.NotFound;
 using Backend.Exceptions.Unauthorized;
 using Backend.Helpers;
 using Backend.Repositories.Appointments;
+using Backend.Services.Appointments.VideoCalls;
 using Backend.Services.CurrentUser;
 using Backend.Services.MailerSend;
 using Backend.Services.Offices;
@@ -19,13 +20,15 @@ using FluentValidation;
 namespace Backend.Services.Appointments;
 
 public class AppointmentService(
-    IAppointmentRepository appointmentRepository, 
-    IPatientService patientService, 
-    IOfficeService officeService, 
-    ICurrentUserService currentUserService, 
-    IUserService userService, 
-    IMailerSenderService mailSenderService, 
-    IValidator<SeveralAppointmentsRequestCreateDto> createValidatorDto, 
+    IAppointmentRepository appointmentRepository,
+    IPatientService patientService,
+    IOfficeService officeService,
+    ICurrentUserService currentUserService,
+    IUserService userService,
+    IMailerSenderService mailSenderService,
+    IAppointmentVideoCallService videoCallService,
+    ILogger<AppointmentService> logger,
+    IValidator<SeveralAppointmentsRequestCreateDto> createValidatorDto,
     IValidator<RescheduleToSlotRequestDto> rescheduleToSlotValidatorDto,
     IMapper mapper) : IAppointmentService
 {
@@ -37,7 +40,7 @@ public class AppointmentService(
         {
             throw new BadRequestException("La cita ya se encuentra ocupada");
         }
-        
+
         var appointment = await appointmentRepository.AssignAppointmentAsync(dto.AppointmentId, dto.PatientId);
 
         // Send email notification to patient
@@ -46,12 +49,31 @@ public class AppointmentService(
         var officeId = userInfo!.Office.Id;
         var officeInfo = await officeService.GetByIdAsync(officeId);
 
+        string? videoCallLink = null;
         if (patientInfo != null)
         {
-            await SendConfirmationEmailAsync(patientInfo, officeInfo, appointmentInfo);
+            try
+            {
+                var provision = await videoCallService.ProvisionForAsync(
+                    dto.AppointmentId,
+                    $"{patientInfo.Name} {patientInfo.Lastname}");
+                videoCallLink = provision.PatientLink;
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex,
+                    "No se pudo provisionar la videollamada para la cita {AppointmentId}; se enviará el correo sin link",
+                    dto.AppointmentId);
+            }
+
+            await SendConfirmationEmailAsync(patientInfo, officeInfo, appointmentInfo, videoCallLink);
         }
 
-        return mapper.Map<AppointmentResponseDto>(appointment);
+        // Re-fetch para que la respuesta traiga room_name/url/created_at ya persistidas por la provisión
+        var fresh = await appointmentRepository.GetByIdAsync(dto.AppointmentId) ?? appointment;
+        var response = mapper.Map<AppointmentResponseDto>(fresh);
+        response.VideoCallLink = videoCallLink;
+        return response;
     }
 
     public async Task<int> CreateSeveralAppointmentsAsync(SeveralAppointmentsRequestCreateDto dto)
@@ -82,6 +104,21 @@ public class AppointmentService(
         }
 
         var reschedule = await appointmentRepository.RescheduleToSlotAsync(dto.OldAppointmentId, dto.NewAppointmentId);
+
+        // Al liberar el slot viejo, borramos su room en Daily y limpiamos las columnas en DB.
+        // El nuevo slot NO se auto-provisiona (evita consumir cupo mensual sin decisión explícita);
+        // el admin debe llamar POST /appointments/{id}/video/provision si quiere videollamada.
+        try
+        {
+            await videoCallService.DeprovisionAsync(dto.OldAppointmentId);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex,
+                "No se pudo deprovisionar la videollamada de la cita {OldId} durante el reagendamiento",
+                dto.OldAppointmentId);
+        }
+
         return mapper.Map<AppointmentResponseDto>(reschedule);
     }
 
@@ -115,7 +152,7 @@ public class AppointmentService(
         return mapper.Map<IEnumerable<AppointmentResponseDto>>(appointments);
     }
 
-    public async Task SendConfirmationEmailAsync(PatientResponseDto patientResponseDto, OfficeResponseDto officeResponseDto, AppointmentResponseDto appointmentResponseDto)
+    public async Task SendConfirmationEmailAsync(PatientResponseDto patientResponseDto, OfficeResponseDto officeResponseDto, AppointmentResponseDto appointmentResponseDto, string? videoCallLink = null)
     {
         var templateDto = new AppointmentConfirmationEmailDto
         {
@@ -124,9 +161,12 @@ public class AppointmentService(
             OfficeNit = officeResponseDto.Nit,
             OfficeAddress = officeResponseDto.Address,
             OfficeBrandUrl = officeResponseDto.Brand,
+            DoctorName = $"Dr. {appointmentResponseDto.Doctor.Name} {appointmentResponseDto.Doctor.LastName}".Trim(),
+            SpecialityName = appointmentResponseDto.Speciality.Name,
             DateAppointment = appointmentResponseDto.DateAppointment,
             StartHour = appointmentResponseDto.StartHour,
-            EndHour = appointmentResponseDto.EndHour
+            EndHour = appointmentResponseDto.EndHour,
+            VideoCallLink = videoCallLink
         };
 
         var htmlContent = AppointmentEmailTemplateHelper
@@ -140,7 +180,7 @@ public class AppointmentService(
         );
     }
     
-    public async Task SendReminderEmailAsync(PatientResponseDto patientResponseDto, OfficeResponseDto officeResponseDto, AppointmentResponseDto appointmentResponseDto)
+    public async Task SendReminderEmailAsync(PatientResponseDto patientResponseDto, OfficeResponseDto officeResponseDto, AppointmentResponseDto appointmentResponseDto, string? videoCallLink = null)
     {
         var templateDto = new AppointmentReminderEmailDto
         {
@@ -149,9 +189,12 @@ public class AppointmentService(
             OfficeNit = officeResponseDto.Nit,
             OfficeAddress = officeResponseDto.Address,
             OfficeBrandUrl = officeResponseDto.Brand,
+            DoctorName = $"Dr. {appointmentResponseDto.Doctor.Name} {appointmentResponseDto.Doctor.LastName}".Trim(),
+            SpecialityName = appointmentResponseDto.Speciality.Name,
             DateAppointment = appointmentResponseDto.DateAppointment,
             StartHour = appointmentResponseDto.StartHour,
-            EndHour = appointmentResponseDto.EndHour
+            EndHour = appointmentResponseDto.EndHour,
+            VideoCallLink = videoCallLink
         };
 
         var htmlContent = AppointmentEmailTemplateHelper
@@ -191,5 +234,39 @@ public class AppointmentService(
 
         var rows = await appointmentRepository.GetPatientsAttendedByDoctorAsync(doctorId, startDate, search ?? string.Empty, limit, offset);
         return mapper.Map<IEnumerable<PatientAttendedByDoctorResponseDto>>(rows);
+    }
+
+    public async Task<AppointmentVideoProvisionResultDto> ProvisionVideoCallAsync(int appointmentId)
+    {
+        var appointment = await GetByIdAsync(appointmentId);
+
+        if (appointment.Patient is null)
+            throw new BadRequestException("La cita no tiene paciente asignado");
+
+        var patientDisplayName = $"{appointment.Patient.Name} {appointment.Patient.Lastname}";
+        var result = await videoCallService.ProvisionForAsync(appointmentId, patientDisplayName);
+
+        var patientInfo = await patientService.GetByIdAsync(appointment.Patient.Id);
+        if (patientInfo != null)
+        {
+            var userInfo = await userService.GetByIdAsync(appointment.UserId);
+            var officeInfo = await officeService.GetByIdAsync(userInfo!.Office.Id);
+            await SendConfirmationEmailAsync(patientInfo, officeInfo, appointment, result.PatientLink);
+        }
+
+        return result;
+    }
+
+    public async Task<DoctorMeetingTokenResultDto> IssueDoctorMeetingTokenAsync(int appointmentId)
+    {
+        var appointment = await GetByIdAsync(appointmentId);
+        var doctorDisplayName = $"Dr. {appointment.Doctor.Name} {appointment.Doctor.LastName}".Trim();
+        return await videoCallService.IssueDoctorTokenAsync(appointmentId, doctorDisplayName);
+    }
+
+    public async Task DeprovisionVideoCallAsync(int appointmentId)
+    {
+        _ = await GetByIdAsync(appointmentId);
+        await videoCallService.DeprovisionAsync(appointmentId);
     }
 }

@@ -1,17 +1,22 @@
 using Backend.Swagger;
 using Backend.Cors;
 using Backend.Entities.CloudinaryUpload;
+using Backend.Entities.Daily;
 using Backend.Entities.Users;
 using Backend.Health;
+using Backend.Jobs;
 using Backend.Middlewares;
 using Backend.Persistence;
 using Backend.Repositories;
 using Backend.Services;
+using Backend.Services.Daily;
 using FluentValidation;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
+using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
+using System.Net.Http.Headers;
 using System.Reflection;
 using System.Text;
 using Backend.RateLimits;
@@ -55,6 +60,27 @@ builder.Services.Configure<UserAvatarPresetsSettings>(
 
 // HttpClient
 builder.Services.AddHttpClient();
+
+// Daily.co
+builder.Services.Configure<DailySettings>(
+    builder.Configuration.GetSection("Daily")
+);
+
+builder.Services.AddHttpClient<IDailyApiService, DailyApiService>((sp, client) =>
+{
+    var settings = sp.GetRequiredService<IOptions<DailySettings>>().Value;
+
+    var apiKey = !string.IsNullOrWhiteSpace(settings.ApiKey)
+        ? settings.ApiKey
+        : Environment.GetEnvironmentVariable("Daily__ApiKey")
+          ?? throw new InvalidOperationException("Daily API Key no configurado");
+
+    var baseUrl = settings.BaseUrl.EndsWith('/') ? settings.BaseUrl : settings.BaseUrl + "/";
+
+    client.BaseAddress = new Uri(baseUrl);
+    client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", apiKey);
+    client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+});
 
 // Repositories & Services
 builder.Services.AddRepositories();
@@ -100,13 +126,14 @@ builder.Services.AddHangfire(config => config
     .SetDataCompatibilityLevel(CompatibilityLevel.Version_180)
     .UseSimpleAssemblyNameTypeSerializer()
     .UseRecommendedSerializerSettings()
-    .UsePostgreSqlStorage(options => 
+    .UsePostgreSqlStorage(options =>
     {
         options.UseNpgsqlConnection(connectionString);
     }));
 
 // Background jobs
-//builder.Services.AddHangfireServer();
+builder.Services.AddHangfireServer();
+builder.Services.AddScoped<AppointmentReminderJob>();
 
 var app = builder.Build();
 
@@ -121,7 +148,12 @@ if (app.Environment.IsDevelopment() || app.Environment.IsProduction())
     app.UseSwaggerConfiguration();
 }
 
-//app.UseHangfireDashboard();
+app.UseHangfireDashboard();
+
+RecurringJob.AddOrUpdate<AppointmentReminderJob>(
+    "appointment-reminders",
+    job => job.SendPendingRemindersAsync(),
+    "*/10 * * * *");
 
 app.UseCors("Confirm_Med_Rule");
 

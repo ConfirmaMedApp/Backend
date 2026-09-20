@@ -16,14 +16,18 @@ public interface IAppointmentService
     Task<AppointmentResponseDto> GetByIdAsync(int id);
     Task<IEnumerable<AppointmentResponseDto>> GetByPatientNeedAppointmentAsync(int specialityId, string startHour, string dateSelected);
     Task<IEnumerable<AppointmentResponseDto>> GetRecommendationsForPatientAsync(int specialityId, string dateSelected);
-    Task SendConfirmationEmailAsync(PatientResponseDto patientResponseDto, OfficeResponseDto officeResponseDto, AppointmentResponseDto appointmentResponseDto);
+    Task SendConfirmationEmailAsync(PatientResponseDto patientResponseDto, OfficeResponseDto officeResponseDto, AppointmentResponseDto appointmentResponseDto, string? videoCallLink = null);
 
     Task SendReminderEmailAsync(PatientResponseDto patientResponseDto, OfficeResponseDto officeResponseDto,
-        AppointmentResponseDto appointmentResponseDto);
+        AppointmentResponseDto appointmentResponseDto, string? videoCallLink = null);
 
     Task<IEnumerable<PatientAttendedByDoctorResponseDto>> GetPatientsAttendedByDoctorAsync(
         string? startDate,
         string search,
         int? limit,
         int? offset);
+
+    Task<AppointmentVideoProvisionResultDto> ProvisionVideoCallAsync(int appointmentId);
+    Task<DoctorMeetingTokenResultDto> IssueDoctorMeetingTokenAsync(int appointmentId);
+    Task DeprovisionVideoCallAsync(int appointmentId);
 }

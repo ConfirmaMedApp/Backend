@@ -96,4 +96,28 @@ public class AppointmentsController(IAppointmentService appointmentService) : Ba
         var rows = await appointmentService.GetPatientsAttendedByDoctorAsync(startDate, search ?? string.Empty, limit, offset);
         return OkResponse(rows);
     }
+
+    [HttpPost("{id:int}/video/provision", Name = "ProvisionAppointmentVideo")]
+    [EnableRateLimiting("UserPolicy")]
+    public async Task<IActionResult> ProvisionVideo([FromRoute] int id)
+    {
+        var result = await appointmentService.ProvisionVideoCallAsync(id);
+        return OkResponse(result, "Videollamada provisionada satisfactoriamente");
+    }
+
+    [HttpGet("{id:int}/video/doctor-token", Name = "GetAppointmentDoctorToken")]
+    [EnableRateLimiting("UserPolicy")]
+    public async Task<IActionResult> GetDoctorToken([FromRoute] int id)
+    {
+        var result = await appointmentService.IssueDoctorMeetingTokenAsync(id);
+        return OkResponse(result, "Token de acceso generado satisfactoriamente");
+    }
+
+    [HttpDelete("{id:int}/video", Name = "DeprovisionAppointmentVideo")]
+    [EnableRateLimiting("UserPolicy")]
+    public async Task<IActionResult> DeprovisionVideo([FromRoute] int id)
+    {
+        await appointmentService.DeprovisionVideoCallAsync(id);
+        return OkResponse<object?>(null, "Videollamada eliminada satisfactoriamente");
+    }
 }

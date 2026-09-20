@@ -1,5 +1,6 @@
 ﻿using Backend.Repositories.Patients;
 using Backend.Services.Appointments;
+using Backend.Services.Appointments.VideoCalls;
 using Backend.Services.Auth;
 using Backend.Services.CurrentUser;
 using Backend.Services.Doctors;
@@ -41,6 +42,8 @@ public static class InjectServices
         services.AddScoped<IPatientRepository, PatientRepository>();
 
         services.AddScoped<IAppointmentService, AppointmentService>();
+
+        services.AddScoped<IAppointmentVideoCallService, AppointmentVideoCallService>();
         
         services.AddScoped<ICurrentUserService, CurrentUserService>();
 

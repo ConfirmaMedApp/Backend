@@ -144,22 +144,23 @@ public class AppointmentRepository(IDbConnectionFactory dbConnectionFactory) : R
         }, dbConnectionFactory);
     }
 
-    public Task<IEnumerable<AppointmentFlatDto>> GetAppointmentsForRemindersAsync(int hoursAhead)
+    public Task<IEnumerable<int>> GetAppointmentsForRemindersAsync(int hoursAhead)
     {
         const string query = """
-
-                                         SELECT * FROM appointments 
-                                         WHERE is_occuped = true 
-                                         AND date_appointment + start_hour <= (NOW() + (interval '1 hour' * @Hours))
-                                         AND date_appointment + start_hour > NOW()
-                                         AND (
-                                             (@Hours = 24 AND reminder_24h_sent = false) OR 
-                                             (@Hours = 2 AND reminder_2h_sent = false)
-                                         );
+                             SELECT id
+                             FROM appointments
+                             WHERE is_occuped = true
+                               AND patient_id IS NOT NULL
+                               AND date_appointment + start_hour <= (NOW() + (interval '1 hour' * @Hours))
+                               AND date_appointment + start_hour > NOW()
+                               AND (
+                                   (@Hours = 24 AND reminder_24h_sent = false) OR
+                                   (@Hours = 2  AND reminder_2h_sent = false)
+                               );
                              """;
 
-        return ExecuteSafeAsync(async conn => 
-                await conn.QueryAsync<AppointmentFlatDto>(query, new { Hours = hoursAhead }), 
+        return ExecuteSafeAsync(async conn =>
+                await conn.QueryAsync<int>(query, new { Hours = hoursAhead }),
             dbConnectionFactory);
     }
 
@@ -205,6 +206,38 @@ public class AppointmentRepository(IDbConnectionFactory dbConnectionFactory) : R
                 Limit = limit,
                 Offset = offset
             }), dbConnectionFactory);
+    }
+
+    public Task<AppointmentVideoContextDto?> GetVideoContextAsync(int appointmentId)
+    {
+        const string query = "SELECT * FROM get_appointment_video_context(@Id);";
+
+        return ExecuteSafeAsync(async conn =>
+                await conn.QueryFirstOrDefaultAsync<AppointmentVideoContextDto>(query, new { Id = appointmentId }),
+            dbConnectionFactory);
+    }
+
+    public Task UpdateVideoRoomAsync(int appointmentId, string roomName, string roomUrl)
+    {
+        const string command = "SELECT update_appointment_video_room(@AppointmentId, @RoomName, @RoomUrl);";
+
+        return ExecuteSafeAsync(async conn =>
+                await conn.ExecuteAsync(command, new
+                {
+                    AppointmentId = appointmentId,
+                    RoomName = roomName,
+                    RoomUrl = roomUrl
+                }),
+            dbConnectionFactory);
+    }
+
+    public Task ClearVideoRoomAsync(int appointmentId)
+    {
+        const string command = "SELECT clear_appointment_video_room(@AppointmentId);";
+
+        return ExecuteSafeAsync(async conn =>
+                await conn.ExecuteAsync(command, new { AppointmentId = appointmentId }),
+            dbConnectionFactory);
     }
 
     public Task<IEnumerable<AppointmentFlatDto>> GetAllByUserAsync(string dateSelected, int userId, int? specialityId, bool? isOccuped, int? limit, int? offset)

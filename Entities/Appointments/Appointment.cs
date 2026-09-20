@@ -13,6 +13,9 @@ public class Appointment
     public bool Status { get; set; }
     public bool IsOccuped { get; set; }
     public bool IsApproved { get; set; }
+    public string? RoomName { get; set; }
+    public string? RoomUrl { get; set; }
+    public DateTime? RoomCreatedAt { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
 }

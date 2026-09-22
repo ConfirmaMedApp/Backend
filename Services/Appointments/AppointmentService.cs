@@ -217,6 +217,12 @@ public class AppointmentService(
         return mapper.Map<IEnumerable<AppointmentResponseDto>>(appointments);
     }
 
+    public async Task<IEnumerable<AppointmentResponseDto>> GetAllByPatientAsync(int patientId, int? specialityId, string? startDate, int? limit, int? offset)
+    {
+        var appointments = await appointmentRepository.GetAllByPatientAsync(patientId, specialityId, startDate, limit, offset);
+        return mapper.Map<IEnumerable<AppointmentResponseDto>>(appointments);
+    }
+
     public async Task<AppointmentVideoProvisionResultDto> ProvisionVideoCallAsync(int appointmentId)
     {
         var appointment = await GetByIdAsync(appointmentId);

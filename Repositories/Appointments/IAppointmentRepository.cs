@@ -32,6 +32,8 @@ public interface IAppointmentRepository
     Task<bool> IsSlotAvailableAsync(int newAppointmentId);
     Task<bool> HasPatientAssignedAsync(int oldAppointmentId);
 
+    Task<IEnumerable<AppointmentFlatDto>> GetAllByPatientAsync(int patientId, int? specialityId, string? startDate, int? limit, int? offset);
+
     Task UpdateVideoRoomAsync(int appointmentId, string roomName, string roomUrl);
     Task ClearVideoRoomAsync(int appointmentId);
 

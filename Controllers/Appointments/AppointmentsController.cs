@@ -49,6 +49,19 @@ public class AppointmentsController(IAppointmentService appointmentService) : Ba
         return OkResponse(appointments);
     }
 
+    [HttpGet("patient/{patientId:int}", Name = "GetAllAppointmentsByPatient")]
+    [EnableRateLimiting("UserPolicy")]
+    public async Task<IActionResult> GetAllByPatient(
+        [FromRoute] int patientId,
+        [FromQuery] int? specialityId,
+        [FromQuery] string? startDate,
+        [FromQuery] int? limit,
+        [FromQuery] int? offset)
+    {
+        var appointments = await appointmentService.GetAllByPatientAsync(patientId, specialityId, startDate, limit, offset);
+        return OkResponse(appointments);
+    }
+
     [AllowAnonymous]
     [HttpPost("assign", Name = "AssignAppointment")]
     [EnableRateLimiting("ClientPolicy")]

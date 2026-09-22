@@ -220,6 +220,24 @@ public class AppointmentRepository(IDbConnectionFactory dbConnectionFactory) : R
             dbConnectionFactory);
     }
 
+    public Task<IEnumerable<AppointmentFlatDto>> GetAllByPatientAsync(int patientId, int? specialityId, string? startDate, int? limit, int? offset)
+    {
+        const string query = "SELECT * FROM get_all_appointments_by_patient(@PatientId, @SpecialityId, @StartDate::date, @Limit, @Offset);";
+
+        return ExecuteSafeAsync(async conn =>
+        {
+            var appointments = await conn.QueryAsync<AppointmentFlatDto>(query, new
+            {
+                PatientId = patientId,
+                SpecialityId = specialityId,
+                StartDate = startDate,
+                Limit = limit,
+                Offset = offset
+            });
+            return appointments;
+        }, dbConnectionFactory);
+    }
+
     public Task<IEnumerable<AppointmentFlatDto>> GetAllByUserAsync(string dateSelected, int userId, int? specialityId, bool? isOccuped, int? limit, int? offset)
     {
         const string query = "SELECT * FROM get_all_appointments_by_user(@DateSelected::date, @UserId, @SpecialityId, @IsOccuped, @Limit, @Offset);";

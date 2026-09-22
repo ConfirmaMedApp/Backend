@@ -13,4 +13,5 @@ public class PatientFlatDto
     public string DocumentTypeName { get; set; } = string.Empty;
     public int GenderId { get; set; }
     public string GenderName { get; set; } = string.Empty;
+    public bool Status { get; set; }
 }

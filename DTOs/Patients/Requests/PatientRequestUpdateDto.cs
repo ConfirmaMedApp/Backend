@@ -11,4 +11,5 @@ public class PatientRequestUpdateDto
     public string Document { get; set; } = string.Empty;
     public int DocumentTypeId { get; set; }
     public int GenderId { get; set; }
+    public bool Status { get; set; } = true;
 }

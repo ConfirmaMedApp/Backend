@@ -64,9 +64,9 @@ public class PatientsController(IPatientService patientService) : BaseController
 
     [HttpGet(Name = "GetAllPatients")]
     [EnableRateLimiting("UserPolicy")]
-    public async Task<IActionResult> GetAll([FromQuery] int? limit, [FromQuery] int? offset, [FromQuery] string search = "")
+    public async Task<IActionResult> GetAll([FromQuery] int? limit, [FromQuery] int? offset, [FromQuery] bool? status, [FromQuery] string search = "")
     {
-        var patients = await patientService.GetAllAsync(limit, offset, search);
+        var patients = await patientService.GetAllAsync(limit, offset, status, search);
         return OkResponse(patients);
     }
 

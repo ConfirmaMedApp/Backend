@@ -9,7 +9,7 @@ public class PatientRepository(IDbConnectionFactory dbConnectionFactory) : Repos
 {
     public Task<PatientFlatDto?> CreateAsync(Patient patient)
     {
-        const string command = "SELECT * FROM create_patient(@Name, @Lastname, @Email, @Phone, @Birthdate::date, @Document, @DocumentTypeId, @GenderId);";
+        const string command = "SELECT * FROM create_patient(@Name, @Lastname, @Email, @Phone, @Birthdate::date, @Document, @DocumentTypeId, @GenderId, @Status);";
 
         return ExecuteSafeAsync(async conn =>
         {
@@ -22,16 +22,17 @@ public class PatientRepository(IDbConnectionFactory dbConnectionFactory) : Repos
                 patient.Birthdate,
                 Document = patient.Document.ToLower(),
                 patient.DocumentTypeId,
-                patient.GenderId
+                patient.GenderId,
+                patient.Status
             });
 
             return await GetByIdAsync(createdPatient);
         }, dbConnectionFactory);
     }
 
-    public Task<IEnumerable<PatientFlatDto>> GetAllAsync(int? limit, int? offset, string search = "")
+    public Task<IEnumerable<PatientFlatDto>> GetAllAsync(int? limit, int? offset, bool? status, string search = "")
     {
-        const string query = "SELECT * FROM get_all_patients(@Limit, @Offset, @Search);";
+        const string query = "SELECT * FROM get_all_patients(@Limit, @Offset, @Search, @Status);";
 
         return ExecuteSafeAsync(async conn =>
         {
@@ -39,7 +40,8 @@ public class PatientRepository(IDbConnectionFactory dbConnectionFactory) : Repos
             {
                 Limit = limit,
                 Offset = offset,
-                Search = search
+                Search = search,
+                Status = status
             });
             return patients;
         }, dbConnectionFactory);
@@ -85,7 +87,7 @@ public class PatientRepository(IDbConnectionFactory dbConnectionFactory) : Repos
 
     public Task<PatientFlatDto?> UpdateAsync(Patient patient)
     {
-        const string command = "SELECT * FROM update_patient(@Id, @Name, @Lastname, @Email, @Phone, @Birthdate::date, @Document, @DocumentTypeId, @GenderId);";
+        const string command = "SELECT * FROM update_patient(@Id, @Name, @Lastname, @Email, @Phone, @Birthdate::date, @Document, @DocumentTypeId, @GenderId, @Status);";
         return ExecuteSafeAsync(async conn =>
         {
             var updatedPatient = await conn.ExecuteScalarAsync<int>(command, new
@@ -98,7 +100,8 @@ public class PatientRepository(IDbConnectionFactory dbConnectionFactory) : Repos
                 patient.Birthdate,
                 Document = patient.Document.ToLower(),
                 patient.DocumentTypeId,
-                patient.GenderId
+                patient.GenderId,
+                patient.Status
             });
             return await GetByIdAsync(updatedPatient);
         }, dbConnectionFactory);

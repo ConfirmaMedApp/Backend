@@ -34,9 +34,9 @@ public class PatientService(
         return mapper.Map<PatientResponseDto>(createdPatient);
     }
 
-    public async Task<IEnumerable<PatientResponseDto>> GetAllAsync(int? limit, int? offset, string search = "")
+    public async Task<IEnumerable<PatientResponseDto>> GetAllAsync(int? limit, int? offset, bool? status, string search = "")
     {
-        var patients = await patientRepository.GetAllAsync(limit, offset, search);
+        var patients = await patientRepository.GetAllAsync(limit, offset, status, search);
         return mapper.Map<IEnumerable<PatientResponseDto>>(patients);
     }
 

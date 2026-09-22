@@ -14,4 +14,5 @@ public class PatientResponseDto
     public string Document { get; set; } = string.Empty;
     public DocumentTypeResponseDto DocumentType { get; set; } = new DocumentTypeResponseDto();
     public GenderResponseDto Gender { get; set; } = new GenderResponseDto();
+    public bool Status { get; set; }
 }

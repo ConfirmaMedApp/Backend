@@ -11,6 +11,7 @@ public class Patient
     public string Document { get; set; } = string.Empty;
     public int DocumentTypeId { get; set; }
     public int GenderId { get; set; }
+    public bool Status { get; set; } = true;
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
 }

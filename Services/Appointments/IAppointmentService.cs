@@ -21,12 +21,6 @@ public interface IAppointmentService
     Task SendReminderEmailAsync(PatientResponseDto patientResponseDto, OfficeResponseDto officeResponseDto,
         AppointmentResponseDto appointmentResponseDto, string? videoCallLink = null);
 
-    Task<IEnumerable<PatientAttendedByDoctorResponseDto>> GetPatientsAttendedByDoctorAsync(
-        string? startDate,
-        string search,
-        int? limit,
-        int? offset);
-
     Task<AppointmentVideoProvisionResultDto> ProvisionVideoCallAsync(int appointmentId);
     Task<DoctorMeetingTokenResultDto> IssueDoctorMeetingTokenAsync(int appointmentId);
     Task DeprovisionVideoCallAsync(int appointmentId);

@@ -45,6 +45,21 @@ public class PatientRepository(IDbConnectionFactory dbConnectionFactory) : Repos
         }, dbConnectionFactory);
     }
 
+    public Task<IEnumerable<PatientFlatDto>> GetAttendedByDoctorAsync(int doctorId, string? startDate, string search, int? limit, int? offset)
+    {
+        const string query = "SELECT * FROM get_patients_attended_by_doctor(@DoctorId, @StartDate::date, @Search, @Limit, @Offset);";
+
+        return ExecuteSafeAsync(async conn =>
+            await conn.QueryAsync<PatientFlatDto>(query, new
+            {
+                DoctorId = doctorId,
+                StartDate = startDate,
+                Search = search,
+                Limit = limit,
+                Offset = offset
+            }), dbConnectionFactory);
+    }
+
     public Task<PatientFlatDto?> GetByDocumentAsync(string document)
     {
         const string query = "SELECT * FROM get_patient_by_document(@Document::varchar);";

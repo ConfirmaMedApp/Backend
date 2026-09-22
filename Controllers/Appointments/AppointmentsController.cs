@@ -85,18 +85,6 @@ public class AppointmentsController(IAppointmentService appointmentService) : Ba
         return OkResponse(appointments);
     }
 
-    [HttpGet("doctor/attended-patients", Name = "GetPatientsAttendedByDoctor")]
-    [EnableRateLimiting("UserPolicy")]
-    public async Task<IActionResult> GetPatientsAttendedByDoctor(
-        [FromQuery] string? startDate,
-        [FromQuery] string? search,
-        [FromQuery] int? limit,
-        [FromQuery] int? offset)
-    {
-        var rows = await appointmentService.GetPatientsAttendedByDoctorAsync(startDate, search ?? string.Empty, limit, offset);
-        return OkResponse(rows);
-    }
-
     [HttpPost("{id:int}/video/provision", Name = "ProvisionAppointmentVideo")]
     [EnableRateLimiting("UserPolicy")]
     public async Task<IActionResult> ProvisionVideo([FromRoute] int id)

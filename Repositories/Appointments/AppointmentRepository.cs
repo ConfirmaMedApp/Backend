@@ -188,26 +188,6 @@ public class AppointmentRepository(IDbConnectionFactory dbConnectionFactory) : R
         return ExecuteSafeAsync(async conn => await conn.ExecuteScalarAsync<bool>(query, new { OldAppointmentId = oldAppointmentId }), dbConnectionFactory);
     }
 
-    public Task<IEnumerable<PatientAttendedByDoctorFlatDto>> GetPatientsAttendedByDoctorAsync(
-        int doctorId,
-        string? startDate,
-        string search,
-        int? limit,
-        int? offset)
-    {
-        const string query = "SELECT * FROM get_patients_attended_by_doctor(@DoctorId, @StartDate::date, @Search, @Limit, @Offset);";
-
-        return ExecuteSafeAsync(async conn =>
-            await conn.QueryAsync<PatientAttendedByDoctorFlatDto>(query, new
-            {
-                DoctorId = doctorId,
-                StartDate = startDate,
-                Search = search,
-                Limit = limit,
-                Offset = offset
-            }), dbConnectionFactory);
-    }
-
     public Task<AppointmentVideoContextDto?> GetVideoContextAsync(int appointmentId)
     {
         const string query = "SELECT * FROM get_appointment_video_context(@Id);";

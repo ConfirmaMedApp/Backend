@@ -69,4 +69,16 @@ public class PatientsController(IPatientService patientService) : BaseController
         var patients = await patientService.GetAllAsync(limit, offset, search);
         return OkResponse(patients);
     }
+
+    [HttpGet("doctor/attended", Name = "GetPatientsAttendedByDoctor")]
+    [EnableRateLimiting("UserPolicy")]
+    public async Task<IActionResult> GetAttendedByDoctor(
+        [FromQuery] string? startDate,
+        [FromQuery] string? search,
+        [FromQuery] int? limit,
+        [FromQuery] int? offset)
+    {
+        var patients = await patientService.GetAttendedByDoctorAsync(startDate, search ?? string.Empty, limit, offset);
+        return OkResponse(patients);
+    }
 }

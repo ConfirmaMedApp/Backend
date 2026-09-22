@@ -217,25 +217,6 @@ public class AppointmentService(
         return mapper.Map<IEnumerable<AppointmentResponseDto>>(appointments);
     }
 
-    public async Task<IEnumerable<PatientAttendedByDoctorResponseDto>> GetPatientsAttendedByDoctorAsync(
-        string? startDate,
-        string search,
-        int? limit,
-        int? offset)
-    {
-        var loggedUserId = currentUserService.UserId
-            ?? throw new UnauthorizedException("No te encuentras autenticado");
-
-        var loggedUser = await userService.GetByIdAsync(loggedUserId)
-            ?? throw new UnauthorizedException("Usuario no encontrado");
-
-        var doctorId = loggedUser.Doctor?.Id
-            ?? throw new BadRequestException("El usuario no tiene un doctor asignado");
-
-        var rows = await appointmentRepository.GetPatientsAttendedByDoctorAsync(doctorId, startDate, search ?? string.Empty, limit, offset);
-        return mapper.Map<IEnumerable<PatientAttendedByDoctorResponseDto>>(rows);
-    }
-
     public async Task<AppointmentVideoProvisionResultDto> ProvisionVideoCallAsync(int appointmentId)
     {
         var appointment = await GetByIdAsync(appointmentId);

@@ -4,12 +4,21 @@ using Backend.DTOs.Patients.Responses;
 using Backend.Entities.Patients;
 using Backend.Exceptions.BadRequest;
 using Backend.Exceptions.NotFound;
+using Backend.Exceptions.Unauthorized;
 using Backend.Repositories.Patients;
+using Backend.Services.CurrentUser;
+using Backend.Services.Users;
 using FluentValidation;
 
 namespace Backend.Services.Patients;
 
-public class PatientService(IPatientRepository patientRepository, IMapper mapper, IValidator<PatientRequestCreateDto> createValidatorDto, IValidator<PatientRequestUpdateDto> updateValidatorDto) : IPatientService
+public class PatientService(
+    IPatientRepository patientRepository,
+    IMapper mapper,
+    IValidator<PatientRequestCreateDto> createValidatorDto,
+    IValidator<PatientRequestUpdateDto> updateValidatorDto,
+    ICurrentUserService currentUserService,
+    IUserService userService) : IPatientService
 {
     public async Task<PatientResponseDto> CreateAsync(PatientRequestCreateDto dto)
     {
@@ -28,6 +37,21 @@ public class PatientService(IPatientRepository patientRepository, IMapper mapper
     public async Task<IEnumerable<PatientResponseDto>> GetAllAsync(int? limit, int? offset, string search = "")
     {
         var patients = await patientRepository.GetAllAsync(limit, offset, search);
+        return mapper.Map<IEnumerable<PatientResponseDto>>(patients);
+    }
+
+    public async Task<IEnumerable<PatientResponseDto>> GetAttendedByDoctorAsync(string? startDate, string search, int? limit, int? offset)
+    {
+        var loggedUserId = currentUserService.UserId
+            ?? throw new UnauthorizedException("No te encuentras autenticado");
+
+        var loggedUser = await userService.GetByIdAsync(loggedUserId)
+            ?? throw new UnauthorizedException("Usuario no encontrado");
+
+        var doctorId = loggedUser.Doctor?.Id
+            ?? throw new BadRequestException("El usuario no tiene un doctor asignado");
+
+        var patients = await patientRepository.GetAttendedByDoctorAsync(doctorId, startDate, search ?? string.Empty, limit, offset);
         return mapper.Map<IEnumerable<PatientResponseDto>>(patients);
     }
 

@@ -9,7 +9,7 @@ public static class CorsService
         "http://127.0.0.1:3001",
         "http://127.0.0.1:3002",
         "https://frontend-production-0683.up.railway.app",
-        "https://landing-production-ac6f.up.railway.app"
+        "https://landing-production-ac6f.up.railway.app/"
     ];
 
     public static IServiceCollection AddCorsService(this IServiceCollection services, IWebHostEnvironment environment)

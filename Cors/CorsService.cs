@@ -8,8 +8,8 @@ public static class CorsService
         "http://localhost:3002",
         "http://127.0.0.1:3001",
         "http://127.0.0.1:3002",
-        "https://confirmamed-prod.up.railway.app/",
-        "https://patients-prod.up.railway.app/"
+        "https://confirmamed-prod.up.railway.app",
+        "https://patients-prod.up.railway.app"
     ];
 
     public static IServiceCollection AddCorsService(this IServiceCollection services, IWebHostEnvironment environment)

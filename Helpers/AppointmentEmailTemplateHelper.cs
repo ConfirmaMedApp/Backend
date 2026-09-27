@@ -11,12 +11,11 @@ public static class AppointmentEmailTemplateHelper
 
     public static string BuildConfirmationEmail(AppointmentConfirmationEmailDto dto)
     {
-        var body = LoadTemplate();
+        var body = LoadTemplate("confirmation-email.html");
 
         body = ApplyVideoCallBlock(body, dto.VideoCallLink);
 
         body = body
-            .Replace("{{OfficeBrandUrl}}", dto.OfficeBrandUrl)
             .Replace("{{OfficeName}}", dto.OfficeName)
             .Replace("{{ToName}}", dto.ToName)
             .Replace("{{DoctorName}}", dto.DoctorName)
@@ -24,7 +23,6 @@ public static class AppointmentEmailTemplateHelper
             .Replace("{{DateAppointment}}", dto.DateAppointment)
             .Replace("{{StartHour}}", dto.StartHour)
             .Replace("{{EndHour}}", dto.EndHour)
-            .Replace("{{OfficeNit}}", dto.OfficeNit)
             .Replace("{{OfficeAddress}}", dto.OfficeAddress);
 
         return body;
@@ -32,12 +30,11 @@ public static class AppointmentEmailTemplateHelper
 
     public static string BuildReminderEmail(AppointmentReminderEmailDto dto)
     {
-        var body = LoadTemplate();
+        var body = LoadTemplate("reminder-email.html");
 
         body = ApplyVideoCallBlock(body, dto.VideoCallLink);
 
         body = body
-            .Replace("{{OfficeBrandUrl}}", dto.OfficeBrandUrl)
             .Replace("{{OfficeName}}", dto.OfficeName)
             .Replace("{{ToName}}", dto.ToName)
             .Replace("{{DoctorName}}", dto.DoctorName)
@@ -45,15 +42,14 @@ public static class AppointmentEmailTemplateHelper
             .Replace("{{DateAppointment}}", dto.DateAppointment)
             .Replace("{{StartHour}}", dto.StartHour)
             .Replace("{{EndHour}}", dto.EndHour)
-            .Replace("{{OfficeNit}}", dto.OfficeNit)
             .Replace("{{OfficeAddress}}", dto.OfficeAddress);
 
         return body;
     }
 
-    private static string LoadTemplate()
+    private static string LoadTemplate(string fileName)
     {
-        var templatePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Templates", "confirmation-email.html");
+        var templatePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Templates", fileName);
 
         if (!File.Exists(templatePath))
         {

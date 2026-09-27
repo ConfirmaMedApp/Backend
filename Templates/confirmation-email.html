@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es" xmlns="http://www.w3.org/1999/xhtml" xmlns:o="urn:schemas-microsoft-com:office:office">
 <head>
     <meta charset="UTF-8">
@@ -7,72 +7,57 @@
     <title>Confirmación de Cita</title>
     <style>
         body { margin: 0; padding: 0; width: 100% !important; -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%; }
-        img { border: 0; outline: none; text-decoration: none; display: block; }
+        img { border: 0; outline: none; text-decoration: none; }
 
         @media only screen and (max-width: 600px) {
             .email-container { width: 100% !important; margin: 0 !important; }
-            .content-padding { padding: 20px 15px !important; }
-            .mobile-font { font-size: 16px !important; }
-            .header-text { font-size: 24px !important; }
+            .content-padding { padding: 20px 22px !important; }
+            .header-pad { padding: 32px 24px 44px !important; }
         }
     </style>
 </head>
-<body style="margin: 0; padding: 0; background-color: #f4f7f6; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; color: #333333;">
+<body style="margin: 0; padding: 0; background-color: #eef1f4; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; color: #16202e;">
 
-<table border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #f4f7f6;">
+<table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #eef1f4;">
     <tr>
         <td align="center" style="padding: 40px 10px;">
 
-            <table class="email-container" border="0" cellpadding="0" cellspacing="0" width="600" style="background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.05);">
+            <table class="email-container" role="presentation" border="0" cellpadding="0" cellspacing="0" width="600" style="background-color: #ffffff; border-radius: 14px; overflow: hidden; box-shadow: 0 4px 18px rgba(20,30,50,0.06);">
 
+                <!-- Header con degradado + saludo -->
                 <tr>
-                    <td align="center" style="padding: 40px 40px 20px 40px; background-color: #ffffff;">
-                        <img src="{{OfficeBrandUrl}}" alt="{{OfficeName}}" width="150" style="max-width: 150px; height: auto; display: block; border: 0;" />
+                    <td class="header-pad" align="center" style="padding: 38px 40px 46px; background-color: #1783b8; background-image: linear-gradient(135deg, #0ea5a4 0%, #2563eb 100%);">
+                        <div style="font-size: 22px; font-weight: 800; letter-spacing: 0.16em; color: #ffffff;">CONFIRMA<span style="color: #c9f2ee;">MED</span></div>
+                        <h1 style="margin: 22px 0 0; font-size: 27px; font-weight: 800; color: #ffffff; line-height: 1.25;">¡Listo, {{ToName}}!</h1>
+                        <p style="margin: 8px 0 0; font-size: 15px; color: #e4f5f3;">Tu cita ha sido asignada correctamente</p>
                     </td>
                 </tr>
 
+                <!-- Tarjeta de detalles flotante -->
                 <tr>
-                    <td class="content-padding" style="padding: 0 40px 10px 40px; text-align: center;">
-                        <h1 class="header-text" style="margin: 0; font-size: 26px; font-weight: 700; color: #1a1a1a;">¡Tu cita está confirmada!</h1>
-                        <p style="margin: 20px 0 10px; font-size: 16px; line-height: 1.6; color: #555555;">
-                            Hola <strong>{{ToName}}</strong>,<br>
-                            Hemos reservado tu espacio exitosamente. Aquí tienes los detalles:
-                        </p>
-                    </td>
-                </tr>
-
-                <tr>
-                    <td style="padding: 10px 40px;">
-                        <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f8f9fb; border-radius: 8px; border: 1px solid #eef1f5;">
+                    <td style="padding: 0 24px;">
+                        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top: -26px; background-color: #ffffff; border: 1px solid #e9edf3; border-radius: 12px; box-shadow: 0 8px 24px rgba(20,30,50,0.08);">
                             <tr>
-                                <td style="padding: 20px;">
-                                    <table width="100%" cellpadding="0" cellspacing="0">
+                                <td style="padding: 22px 26px;">
+                                    <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
                                         <tr>
-                                            <td width="30" valign="top" style="padding-bottom: 15px; font-size: 20px;">📅</td>
-                                            <td style="padding-bottom: 15px; font-size: 16px; color: #333; font-weight: 600;">
-                                                <span style="display: block; font-size: 12px; color: #888; text-transform: uppercase; letter-spacing: 1px; font-weight: normal;">Fecha</span>
-                                                {{DateAppointment}}
+                                            <td width="50%" style="padding: 0 8px 16px 0; vertical-align: top;">
+                                                <span style="display: block; font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: #8a94a8;">Fecha</span>
+                                                <span style="font-size: 15px; font-weight: 700; color: #16202e; text-transform: capitalize;">{{DateAppointment}}</span>
+                                            </td>
+                                            <td width="50%" style="padding: 0 0 16px 8px; vertical-align: top;">
+                                                <span style="display: block; font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: #8a94a8;">Horario</span>
+                                                <span style="font-size: 15px; font-weight: 700; color: #16202e;">{{StartHour}} — {{EndHour}}</span>
                                             </td>
                                         </tr>
                                         <tr>
-                                            <td width="30" valign="top" style="padding-bottom: 15px; font-size: 20px;">⏰</td>
-                                            <td style="padding-bottom: 15px; font-size: 16px; color: #333; font-weight: 600;">
-                                                <span style="display: block; font-size: 12px; color: #888; text-transform: uppercase; letter-spacing: 1px; font-weight: normal;">Horario</span>
-                                                {{StartHour}} - {{EndHour}}
+                                            <td width="50%" style="padding: 0 8px 0 0; vertical-align: top;">
+                                                <span style="display: block; font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: #8a94a8;">Profesional</span>
+                                                <span style="font-size: 15px; font-weight: 700; color: #16202e; text-transform: capitalize;">{{DoctorName}}</span>
                                             </td>
-                                        </tr>
-                                        <tr>
-                                            <td width="30" valign="top" style="padding-bottom: 15px; font-size: 20px;">👨‍⚕️</td>
-                                            <td style="padding-bottom: 15px; font-size: 16px; color: #333; font-weight: 600;">
-                                                <span style="display: block; font-size: 12px; color: #888; text-transform: uppercase; letter-spacing: 1px; font-weight: normal;">Doctor</span>
-                                                {{DoctorName}}
-                                            </td>
-                                        </tr>
-                                        <tr>
-                                            <td width="30" valign="top" style="padding-bottom: 0; font-size: 20px;">🩺</td>
-                                            <td style="padding-bottom: 0; font-size: 16px; color: #333; font-weight: 600;">
-                                                <span style="display: block; font-size: 12px; color: #888; text-transform: uppercase; letter-spacing: 1px; font-weight: normal;">Especialidad</span>
-                                                {{SpecialityName}}
+                                            <td width="50%" style="padding: 0 0 0 8px; vertical-align: top;">
+                                                <span style="display: block; font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: #8a94a8;">Especialidad</span>
+                                                <span style="font-size: 15px; font-weight: 700; color: #16202e; text-transform: capitalize;">{{SpecialityName}}</span>
                                             </td>
                                         </tr>
                                     </table>
@@ -83,60 +68,84 @@
                 </tr>
 
                 {{#VideoCallBlock}}
+                <!-- Intro cálida -->
                 <tr>
-                    <td style="padding: 20px 40px 10px;">
-                        <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #ecfdf5; border-radius: 6px; border-left: 4px solid #10b981;">
+                    <td class="content-padding" style="padding: 22px 40px 0;">
+                        <p style="margin: 0; font-size: 16px; line-height: 1.65; color: #55617a;">
+                            Tu consulta es por <strong style="color: #16202e;">videollamada</strong>, así que puedes atenderte desde casa, el trabajo o donde estés. Es muy fácil, te guiamos:
+                        </p>
+                    </td>
+                </tr>
+
+                <!-- Cómo conectarte: 3 pasos -->
+                <tr>
+                    <td class="content-padding" style="padding: 22px 40px 0;">
+                        <p style="margin: 0 0 14px; font-size: 14px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; color: #1d4ed8;">Cómo conectarte</p>
+                        <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
                             <tr>
-                                <td style="padding: 20px; text-align: center;">
-                                    <p style="margin: 0 0 8px; font-size: 13px; color: #065f46; text-transform: uppercase; letter-spacing: 1px; font-weight: 600;">
-                                        🎥 Videollamada
-                                    </p>
-                                    <p style="margin: 0 0 16px; font-size: 14px; color: #065f46; line-height: 1.5;">
-                                        Tu cita será por videollamada. Usa el siguiente botón para conectarte a la hora agendada.
-                                    </p>
-                                    <a href="{{VideoCallLink}}"
-                                       style="display: inline-block; padding: 12px 24px; background-color: #10b981; color: #ffffff; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 15px;">
-                                        Entrar a la videollamada
-                                    </a>
-                                    <p style="margin: 14px 0 0; font-size: 12px; color: #065f46;">
-                                        El link solo funciona entre las <strong>{{StartHour}}</strong> y las <strong>{{EndHour}}</strong>.
-                                    </p>
+                                <td style="vertical-align: top; width: 30px;">
+                                    <div style="width: 24px; height: 24px; border-radius: 50%; background-color: #2563eb; color: #ffffff; font-size: 13px; font-weight: 800; text-align: center; line-height: 24px;">1</div>
+                                </td>
+                                <td style="padding: 0 0 14px 8px; font-size: 14px; line-height: 1.5; color: #55617a;">El día de tu cita, abre este correo.</td>
+                            </tr>
+                            <tr>
+                                <td style="vertical-align: top;">
+                                    <div style="width: 24px; height: 24px; border-radius: 50%; background-color: #2563eb; color: #ffffff; font-size: 13px; font-weight: 800; text-align: center; line-height: 24px;">2</div>
+                                </td>
+                                <td style="padding: 0 0 14px 8px; font-size: 14px; line-height: 1.5; color: #55617a;">Pulsa el botón de abajo. Se abre en tu navegador, sin instalar nada.</td>
+                            </tr>
+                            <tr>
+                                <td style="vertical-align: top;">
+                                    <div style="width: 24px; height: 24px; border-radius: 50%; background-color: #2563eb; color: #ffffff; font-size: 13px; font-weight: 800; text-align: center; line-height: 24px;">3</div>
+                                </td>
+                                <td style="padding: 0 0 4px 8px; font-size: 14px; line-height: 1.5; color: #55617a;">Permite el uso de tu cámara y micrófono. ¡Y listo!</td>
+                            </tr>
+                        </table>
+                    </td>
+                </tr>
+
+                <!-- Panel de videollamada -->
+                <tr>
+                    <td style="padding: 22px 24px 6px;">
+                        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color: #eef6ff; border: 1px solid #d5e6fb; border-radius: 12px;">
+                            <tr>
+                                <td style="padding: 24px; text-align: center;">
+                                    <p style="margin: 0 0 6px; font-size: 22px;">🎥</p>
+                                    <p style="margin: 0 0 4px; font-size: 16px; font-weight: 800; color: #16324f;">Tu videollamada te espera</p>
+                                    <p style="margin: 0 0 18px; font-size: 14px; line-height: 1.6; color: #3f5670;">Pulsa aquí a la hora de tu cita para entrar a la consulta.</p>
+                                    <a href="{{VideoCallLink}}" style="display: inline-block; padding: 16px 36px; background-color: #2563eb; color: #ffffff; text-decoration: none; border-radius: 10px; font-weight: 700; font-size: 17px;">🎥 Entrar a la videollamada</a>
+                                    <p style="margin: 14px 0 0; font-size: 12px; color: #5b7189;">Disponible a la hora de tu cita</p>
                                 </td>
                             </tr>
                         </table>
+                    </td>
+                </tr>
+
+                <!-- Consejo -->
+                <tr>
+                    <td class="content-padding" style="padding: 16px 40px 4px; text-align: center;">
+                        <p style="margin: 0; font-size: 13px; line-height: 1.6; color: #8a94a8;">
+                            ¿Es tu primera videoconsulta? Conéctate 5 minutos antes para probar tu cámara y micrófono con calma, en un lugar con buena conexión a internet.
+                        </p>
                     </td>
                 </tr>
                 {{/VideoCallBlock}}
 
+                <!-- Footer -->
                 <tr>
-                    <td style="padding: 20px 40px 10px;">
-                        <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #e3f2fd; border-radius: 6px; border-left: 4px solid #2196f3;">
-                            <tr>
-                                <td style="padding: 15px;">
-                                    <p style="margin: 0; font-size: 14px; color: #0d47a1; line-height: 1.5;">
-                                        <strong>ℹ️ Importante:</strong> Por favor preséntate con al menos <strong>10 minutos de anticipación</strong> para completar el registro.
-                                    </p>
-                                </td>
-                            </tr>
-                        </table>
-                    </td>
-                </tr>
-
-                <tr>
-                    <td style="padding: 20px 40px 40px; text-align: center;">
-                        <hr style="border: none; border-top: 1px solid #eeeeee; margin: 20px 0;" />
-                        <p style="margin: 0; font-size: 14px; color: #666; font-weight: bold;">{{OfficeName}}</p>
-                        <p style="margin: 5px 0 0; font-size: 13px; color: #888;">NIT: {{OfficeNit}}</p>
-                        <p style="margin: 5px 0 0; font-size: 13px; color: #888;">📍 {{OfficeAddress}}</p>
+                    <td class="content-padding" style="padding: 22px 40px 40px; text-align: center;">
+                        <div style="border-top: 1px solid #eef1f5; padding-top: 18px;">
+                            <p style="margin: 14px 0 0; font-size: 11px; color: #aab2c0;">Mensaje automático, por favor no respondas a este correo.</p>
+                        </div>
                     </td>
                 </tr>
 
             </table>
-            <table border="0" cellpadding="0" cellspacing="0" width="100%">
+
+            <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">
                 <tr>
-                    <td align="center" style="padding-top: 20px; color: #999999; font-size: 12px;">
-                        <p style="margin: 0;">Este es un mensaje automático, por favor no responder.</p>
-                        <p style="margin: 5px 0;">&copy; {{OfficeName}}. Todos los derechos reservados.</p>
+                    <td align="center" style="padding-top: 20px; color: #99a2b0; font-size: 12px;">
+                        <p style="margin: 0;">&copy; {{OfficeName}}. Todos los derechos reservados.</p>
                     </td>
                 </tr>
             </table>

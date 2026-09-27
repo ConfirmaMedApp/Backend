@@ -14,6 +14,11 @@ RUN dotnet publish -c Release -o /app/publish
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS final
 WORKDIR /app
 
+# Dependencia de Kerberos requerida por Npgsql (evita el error "libgssapi_krb5.so.2: cannot open shared object file")
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends libgssapi-krb5-2 \
+    && rm -rf /var/lib/apt/lists/*
+
 # Copiar archivos publicados
 COPY --from=build /app/publish .
 

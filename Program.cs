@@ -4,7 +4,6 @@ using Backend.Entities.CloudinaryUpload;
 using Backend.Entities.Daily;
 using Backend.Entities.Users;
 using Backend.Health;
-using Backend.Jobs;
 using Backend.Middlewares;
 using Backend.Persistence;
 using Backend.Repositories;
@@ -20,8 +19,6 @@ using System.Net.Http.Headers;
 using System.Reflection;
 using System.Text;
 using Backend.RateLimits;
-using Hangfire;
-using Hangfire.PostgreSql;
 using Microsoft.AspNetCore.HttpOverrides;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -122,19 +119,6 @@ builder.Services.Configure<ForwardedHeadersOptions>(options =>
     options.KnownProxies.Clear();
 });
 
-builder.Services.AddHangfire(config => config
-    .SetDataCompatibilityLevel(CompatibilityLevel.Version_180)
-    .UseSimpleAssemblyNameTypeSerializer()
-    .UseRecommendedSerializerSettings()
-    .UsePostgreSqlStorage(options =>
-    {
-        options.UseNpgsqlConnection(connectionString);
-    }));
-
-// Background jobs
-builder.Services.AddHangfireServer();
-builder.Services.AddScoped<AppointmentReminderJob>();
-
 var app = builder.Build();
 
 // Middlewares
@@ -147,13 +131,6 @@ if (app.Environment.IsDevelopment() || app.Environment.IsProduction())
 {
     app.UseSwaggerConfiguration();
 }
-
-app.UseHangfireDashboard();
-
-RecurringJob.AddOrUpdate<AppointmentReminderJob>(
-    "appointment-reminders",
-    job => job.SendPendingRemindersAsync(),
-    "*/10 * * * *");
 
 app.UseCors("Confirm_Med_Rule");
 

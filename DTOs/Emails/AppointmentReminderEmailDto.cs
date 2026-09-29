@@ -1,4 +1,4 @@
-namespace Backend.DTOs.MailerSend;
+namespace Backend.DTOs.Emails;
 
 public class AppointmentReminderEmailDto
 {

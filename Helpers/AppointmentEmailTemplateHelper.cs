@@ -1,4 +1,4 @@
-﻿using Backend.DTOs.MailerSend;
+﻿using Backend.DTOs.Emails;
 using System.Text.RegularExpressions;
 using Backend.Exceptions.NotFound;
 

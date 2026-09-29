@@ -1,7 +1,7 @@
 ﻿using AutoMapper;
 using Backend.DTOs.Appointments.Requests;
 using Backend.DTOs.Appointments.Responses;
-using Backend.DTOs.MailerSend;
+using Backend.DTOs.Emails;
 using Backend.DTOs.Offices.Responses;
 using Backend.DTOs.Patients.Responses;
 using Backend.Exceptions.BadRequest;
@@ -11,7 +11,7 @@ using Backend.Helpers;
 using Backend.Repositories.Appointments;
 using Backend.Services.Appointments.VideoCalls;
 using Backend.Services.CurrentUser;
-using Backend.Services.MailerSend;
+using Backend.Services.Bird;
 using Backend.Services.Offices;
 using Backend.Services.Patients;
 using Backend.Services.Users;
@@ -25,7 +25,7 @@ public class AppointmentService(
     IOfficeService officeService,
     ICurrentUserService currentUserService,
     IUserService userService,
-    IMailerSenderService mailSenderService,
+    IBirdEmailService birdEmailService,
     IAppointmentVideoCallService videoCallService,
     ILogger<AppointmentService> logger,
     IValidator<SeveralAppointmentsRequestCreateDto> createValidatorDto,
@@ -172,7 +172,7 @@ public class AppointmentService(
         var htmlContent = AppointmentEmailTemplateHelper
             .BuildConfirmationEmail(templateDto);
 
-        await mailSenderService.SendEmailAssignationAsync(
+        await birdEmailService.SendEmailAssignationAsync(
             patientResponseDto.Email.Trim(),
             templateDto.ToName,
             "Confirmación de cita médica",
@@ -200,7 +200,7 @@ public class AppointmentService(
         var htmlContent = AppointmentEmailTemplateHelper
             .BuildReminderEmail(templateDto);
 
-        await mailSenderService.SendEmailReminderAsync(
+        await birdEmailService.SendEmailReminderAsync(
             patientResponseDto.Email.Trim(),
             templateDto.ToName,
             "Recordatorio de cita médica",

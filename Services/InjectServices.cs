@@ -11,7 +11,7 @@ using Backend.Services.Genders;
 using Backend.Services.Offices;
 using Backend.Services.Specialities;
 using Backend.Services.Users;
-using Backend.Services.MailerSend;
+using Backend.Services.Bird;
 using Backend.Services.CloudinaryUpload;
 using Backend.Services.AppointmentsAnnexes;
 using Backend.Services.AppointmentsNotes;
@@ -47,7 +47,7 @@ public static class InjectServices
         
         services.AddScoped<ICurrentUserService, CurrentUserService>();
 
-        services.AddScoped<IMailerSenderService, MailerSenderService>();
+        services.AddScoped<IBirdEmailService, BirdEmailService>();
 
         services.AddScoped<ICloudinaryService, CloudinaryService>();
 

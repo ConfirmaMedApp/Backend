@@ -208,12 +208,13 @@ public class AppointmentService(
         );
     }
 
-    public async Task<IEnumerable<AppointmentResponseDto>> GetAllByUserAsync(string dateSelected, int? specialityId, bool? isOccuped, int? limit, int? offset)
+    public async Task<IEnumerable<AppointmentResponseDto>> GetAllByUserAsync(string dateSelected, int? specialityId, int? limit, int? offset)
     {
         var loggedUserId = currentUserService.UserId
             ?? throw new UnauthorizedException("No te encuentras autenticado");
 
-        var appointments = await appointmentRepository.GetAllByUserAsync(dateSelected, loggedUserId, specialityId, isOccuped, limit, offset);
+        // Regla de negocio: este endpoint devuelve únicamente las citas ocupadas.
+        var appointments = await appointmentRepository.GetAllByUserAsync(dateSelected, loggedUserId, specialityId, isOccuped: true, limit, offset);
         return mapper.Map<IEnumerable<AppointmentResponseDto>>(appointments);
     }
 

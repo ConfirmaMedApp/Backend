@@ -13,14 +13,23 @@ public class AuthController(IAuthService authService) : BaseControllerCustom
     [HttpPost("login", Name = "LoginUser")]
     public async Task<IActionResult> Login([FromBody] AuthRequestLoginDto dto)
     {
-        var result = await authService.LoginAsync(dto, Response);
+        var result = await authService.LoginAsync(dto, Request, Response);
         return OkResponse(result, "Sesión iniciada");
     }
 
+    [AllowAnonymous]
+    [HttpPost("refresh", Name = "RefreshToken")]
+    public async Task<IActionResult> Refresh()
+    {
+        var result = await authService.RefreshAsync(Request, Response);
+        return OkResponse(result, "Token renovado");
+    }
+
+    [AllowAnonymous]
     [HttpPost("logout", Name = "LogoutUser")]
     public async Task<IActionResult> Logout()
     {
-        await authService.Logout(Response);
+        await authService.LogoutAsync(Request, Response);
         return NoContentResponse();
     }
 

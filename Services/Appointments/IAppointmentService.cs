@@ -10,10 +10,14 @@ public interface IAppointmentService
     Task<int> CreateSeveralAppointmentsAsync(SeveralAppointmentsRequestCreateDto dto);
     Task<AppointmentResponseDto> RescheduleToSlotAsync (RescheduleToSlotRequestDto dto);
     Task<IEnumerable<OccupationAppointmentsPerMonthResponseDto>> GetOccupationAppointmentsPerMonthAsync(int year, int month, int? doctorId);
-    Task<IEnumerable<AppointmentResponseDto>> GetAllAsync(string dateSelected, int? specialityId, int? doctorId, bool? isOccuped, int? limit, int? offset);
+    Task<IEnumerable<AppointmentResponseDto>> GetAllAsync(string dateSelected, int? specialityId, int? doctorId, bool? isOccuped, int? limit, int? offset, string? state);
     Task<IEnumerable<AppointmentResponseDto>> GetAllByUserAsync(string dateSelected, int? specialityId, int? limit, int? offset);
     Task<IEnumerable<AppointmentResponseDto>> GetAllByPatientAsync(int patientId, int? specialityId, string? startDate, int? limit, int? offset);
     Task<AppointmentResponseDto> AssignAppointmentAsync(AssignAppointmentRequestDto dto);
+    Task<AppointmentResponseDto> CancelAppointmentAsync(int appointmentId, string? note);
+    Task<AppointmentResponseDto> MarkNoShowAsync(int appointmentId, string? note);
+    Task ProcessAutomaticTransitionsAsync();
+    Task ProcessRemindersAsync(int hoursAhead);
     Task<AppointmentResponseDto> GetByIdAsync(int id);
     Task<IEnumerable<AppointmentResponseDto>> GetByPatientNeedAppointmentAsync(int specialityId, string startHour, string dateSelected);
     Task<IEnumerable<AppointmentResponseDto>> GetRecommendationsForPatientAsync(int specialityId, string dateSelected);

@@ -18,6 +18,7 @@ public class AppointmentResponseDto
     public bool Status { get; set; }
     public bool IsOccuped { get; set; }
     public bool IsApproved { get; set; }
+    public AppointmentStateDto State { get; set; } = new AppointmentStateDto();
     public int UserId { get; set; }
     public string? RoomName { get; set; }
     public string? RoomUrl { get; set; }

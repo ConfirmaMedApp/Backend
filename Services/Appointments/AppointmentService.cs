@@ -5,6 +5,7 @@ using Backend.DTOs.Emails;
 using Backend.DTOs.Offices.Responses;
 using Backend.DTOs.Patients.Responses;
 using Backend.Exceptions.BadRequest;
+using Backend.Exceptions.Conflict;
 using Backend.Exceptions.NotFound;
 using Backend.Exceptions.Unauthorized;
 using Backend.Helpers;
@@ -36,12 +37,15 @@ public class AppointmentService(
     {
         var appointmentInfo = await GetByIdAsync(dto.AppointmentId);
 
-        if (appointmentInfo.IsOccuped)
+        if (appointmentInfo.State.Code != "libre")
         {
-            throw new BadRequestException("La cita ya se encuentra ocupada");
+            throw new ConflictException("La cita no está disponible para asignar");
         }
 
-        var appointment = await appointmentRepository.AssignAppointmentAsync(dto.AppointmentId, dto.PatientId);
+        // assignment_patient solo asigna si la cita sigue 'libre'; si otra persona
+        // la tomó primero devuelve null y respondemos 409 en lugar de pisar la asignación.
+        var appointment = await appointmentRepository.AssignAppointmentAsync(dto.AppointmentId, dto.PatientId, currentUserService.UserId)
+            ?? throw new ConflictException("La cita ya fue asignada por otra persona");
 
         // Send email notification to patient
         var patientInfo = await patientService.GetByIdAsync(dto.PatientId);
@@ -74,6 +78,107 @@ public class AppointmentService(
         var response = mapper.Map<AppointmentResponseDto>(fresh);
         response.VideoCallLink = videoCallLink;
         return response;
+    }
+
+    public async Task<AppointmentResponseDto> CancelAppointmentAsync(int appointmentId, string? note)
+    {
+        var info = await GetByIdAsync(appointmentId);
+
+        if (info.State.Code != "asignada")
+            throw new ConflictException("Solo se pueden cancelar citas en estado 'asignada'");
+
+        var cancelled = await appointmentRepository.CancelAppointmentAsync(appointmentId, currentUserService.UserId, note)
+            ?? throw new ConflictException("La cita ya no se puede cancelar");
+
+        // El turno cancelado no se reutiliza: liberamos la sala de video si existía.
+        try
+        {
+            await videoCallService.DeprovisionAsync(appointmentId);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "No se pudo deprovisionar la videollamada al cancelar la cita {AppointmentId}", appointmentId);
+        }
+
+        return mapper.Map<AppointmentResponseDto>(cancelled);
+    }
+
+    public async Task<AppointmentResponseDto> MarkNoShowAsync(int appointmentId, string? note)
+    {
+        var info = await GetByIdAsync(appointmentId);
+
+        if (info.State.Code != "en_atencion")
+            throw new ConflictException("Solo se puede marcar 'no asistió' en citas en atención");
+
+        var result = await appointmentRepository.MarkNoShowAsync(appointmentId, currentUserService.UserId, note)
+            ?? throw new ConflictException("La cita no está en atención");
+
+        try
+        {
+            await videoCallService.DeprovisionAsync(appointmentId);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "No se pudo deprovisionar la videollamada al marcar 'no asistió' la cita {AppointmentId}", appointmentId);
+        }
+
+        return mapper.Map<AppointmentResponseDto>(result);
+    }
+
+    public async Task ProcessAutomaticTransitionsAsync()
+    {
+        var changed = await appointmentRepository.ProcessTransitionsAsync();
+
+        foreach (var (appointmentId, toState) in changed)
+        {
+            // Al finalizar liberamos la sala de video para no consumir cupo mensual.
+            if (toState == "finalizada")
+            {
+                try
+                {
+                    await videoCallService.DeprovisionAsync(appointmentId);
+                }
+                catch (Exception ex)
+                {
+                    logger.LogError(ex, "No se pudo deprovisionar la videollamada al finalizar la cita {AppointmentId}", appointmentId);
+                }
+            }
+        }
+    }
+
+    public async Task ProcessRemindersAsync(int hoursAhead)
+    {
+        var ids = await appointmentRepository.GetAppointmentsForRemindersAsync(hoursAhead);
+
+        foreach (var id in ids)
+        {
+            try
+            {
+                var appointment = await GetByIdAsync(id);
+                if (appointment.Patient is null)
+                    continue;
+
+                var patientInfo = await patientService.GetByIdAsync(appointment.Patient.Id);
+                if (patientInfo is null)
+                    continue;
+
+                var userInfo = await userService.GetByIdAsync(appointment.UserId);
+                if (userInfo is null)
+                    continue;
+
+                var officeInfo = await officeService.GetByIdAsync(userInfo.Office.Id);
+
+                var patientLink = await videoCallService.GetPatientLinkAsync(
+                    id, $"{patientInfo.Name} {patientInfo.Lastname}");
+
+                await SendReminderEmailAsync(patientInfo, officeInfo, appointment, patientLink);
+                await appointmentRepository.MarkReminderAsSentAsync(id, hoursAhead);
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "No se pudo enviar el recordatorio ({Hours}h) de la cita {AppointmentId}", hoursAhead, id);
+            }
+        }
     }
 
     public async Task<int> CreateSeveralAppointmentsAsync(SeveralAppointmentsRequestCreateDto dto)
@@ -122,9 +227,9 @@ public class AppointmentService(
         return mapper.Map<AppointmentResponseDto>(reschedule);
     }
 
-    public async Task<IEnumerable<AppointmentResponseDto>> GetAllAsync(string dateSelected, int? specialityId, int? doctorId, bool? isOccuped, int? limit, int? offset)
+    public async Task<IEnumerable<AppointmentResponseDto>> GetAllAsync(string dateSelected, int? specialityId, int? doctorId, bool? isOccuped, int? limit, int? offset, string? state)
     {
-        var appointments = await appointmentRepository.GetAllAsync(dateSelected, specialityId, doctorId, isOccuped, limit, offset);
+        var appointments = await appointmentRepository.GetAllAsync(dateSelected, specialityId, doctorId, isOccuped, limit, offset, state);
         return mapper.Map<IEnumerable<AppointmentResponseDto>>(appointments);
     }
 

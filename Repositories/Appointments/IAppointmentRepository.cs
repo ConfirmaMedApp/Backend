@@ -19,13 +19,16 @@ public interface IAppointmentRepository
     
     Task<AppointmentFlatDto?> RescheduleToSlotAsync(int oldAppointmentId, int newAppointmentId);
     Task<IEnumerable<(DateOnly CalendarDate, string StatusDay, string Color)>> GetOccupationAppointmentsPerMonthAsync(int year, int month, int? doctorId);
-    Task<IEnumerable<AppointmentFlatDto>> GetAllAsync(string dateSelected, int? specialityId, int? doctorId, bool? isOccuped, int? limit, int? offset);
+    Task<IEnumerable<AppointmentFlatDto>> GetAllAsync(string dateSelected, int? specialityId, int? doctorId, bool? isOccuped, int? limit, int? offset, string? state);
     Task<IEnumerable<AppointmentFlatDto>> GetAllByUserAsync(string dateSelected, int userId, int? specialityId, bool? isOccuped, int? limit, int? offset);
     Task<AppointmentFlatDto?> GetByIdAsync(int id);
-    Task<AppointmentFlatDto?> AssignAppointmentAsync(int appointmentId, int patientId);
+    Task<AppointmentFlatDto?> AssignAppointmentAsync(int appointmentId, int patientId, int? userId);
+    Task<AppointmentFlatDto?> CancelAppointmentAsync(int appointmentId, int? userId, string? note);
+    Task<AppointmentFlatDto?> MarkNoShowAsync(int appointmentId, int? userId, string? note);
     Task<IEnumerable<AppointmentFlatDto>> GetByPatientNeedAppointmentAsync(int specialityId, string startHour, string dateSelected);
     Task<IEnumerable<AppointmentFlatDto>> GetRecommendationsForPatientAsync(int specialityId, string dateSelected);
     
+    Task<IEnumerable<(int AppointmentId, string ToState)>> ProcessTransitionsAsync();
     Task<IEnumerable<int>> GetAppointmentsForRemindersAsync(int hoursAhead);
     Task MarkReminderAsSentAsync(int appointmentId, int hourWindow);
     

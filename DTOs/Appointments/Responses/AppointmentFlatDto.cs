@@ -22,6 +22,10 @@ public class AppointmentFlatDto
     public bool Status { get; set; }
     public bool IsOccuped { get; set; }
     public bool IsApproved { get; set; }
+    public int StateId { get; set; }
+    public string StateCode { get; set; } = string.Empty;
+    public string StateName { get; set; } = string.Empty;
+    public string StateColor { get; set; } = string.Empty;
     public int UserId { get; set; }
     public string? RoomName { get; set; }
     public string? RoomUrl { get; set; }

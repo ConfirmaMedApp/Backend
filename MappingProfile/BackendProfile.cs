@@ -153,6 +153,14 @@ public class BackendProfile : Profile
                     Name = src.SpecialityName,
                     Code = src.SpecialityCode
                 }))
+            .ForMember(dest => dest.State, opt => opt.MapFrom(src =>
+                new AppointmentStateDto
+                {
+                    Id = src.StateId,
+                    Code = src.StateCode,
+                    Name = src.StateName,
+                    Color = src.StateColor
+                }))
             .ForMember(dest => dest.Patient, opt => opt.Ignore())
             .AfterMap((src, dest) =>
             {

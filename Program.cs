@@ -8,6 +8,7 @@ using Backend.Middlewares;
 using Backend.Persistence;
 using Backend.Repositories;
 using Backend.Services;
+using Backend.Services.Appointments.Background;
 using Backend.Services.Daily;
 using FluentValidation;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -82,6 +83,9 @@ builder.Services.AddHttpClient<IDailyApiService, DailyApiService>((sp, client) =
 // Repositories & Services
 builder.Services.AddRepositories();
 builder.Services.AddServices();
+
+// Transiciones automáticas de estado + recordatorios (corre cada minuto)
+builder.Services.AddHostedService<AppointmentSchedulerService>();
 
 // Authentication & Authorization
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)

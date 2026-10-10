@@ -6,20 +6,60 @@ namespace Backend.Repositories.Appointments;
 
 public class AppointmentRepository(IDbConnectionFactory dbConnectionFactory) : RepositoryGuard, IAppointmentRepository
 {
-    public Task<AppointmentFlatDto?> AssignAppointmentAsync(int appointmentId, int patientId)
+    public async Task<AppointmentFlatDto?> AssignAppointmentAsync(int appointmentId, int patientId, int? userId)
     {
-        const string command = "SELECT * FROM assignment_patient(@AppointmentId, @PatientId);";
+        // assignment_patient devuelve 0 cuando el turno ya no estaba 'libre'
+        // (lo tomó otra persona entre la verificación y el UPDATE).
+        var affected = await ExecuteStateChangeScalarAsync(
+            "SELECT assignment_patient(@AppointmentId, @PatientId);",
+            new { AppointmentId = appointmentId, PatientId = patientId },
+            userId, "asignacion", null);
 
+        return affected == 0 ? null : await GetByIdAsync(appointmentId);
+    }
+
+    public async Task<AppointmentFlatDto?> CancelAppointmentAsync(int appointmentId, int? userId, string? note)
+    {
+        // cancel_appointment devuelve 0 si la cita ya no estaba 'asignada'.
+        var affected = await ExecuteStateChangeScalarAsync(
+            "SELECT cancel_appointment(@Id);",
+            new { Id = appointmentId },
+            userId, "cancelacion", note);
+
+        return affected == 0 ? null : await GetByIdAsync(appointmentId);
+    }
+
+    public async Task<AppointmentFlatDto?> MarkNoShowAsync(int appointmentId, int? userId, string? note)
+    {
+        // mark_no_show devuelve 0 si la cita no estaba 'en_atencion'.
+        var affected = await ExecuteStateChangeScalarAsync(
+            "SELECT mark_no_show(@Id);",
+            new { Id = appointmentId },
+            userId, "no_asistio", note);
+
+        return affected == 0 ? null : await GetByIdAsync(appointmentId);
+    }
+
+    // Ejecuta un cambio de estado fijando, en la MISMA transacción, los settings
+    // que lee el trigger de historial (quién, por qué y nota). Devuelve el escalar
+    // de la función (id afectado, o 0 si la transición no aplicó).
+    private Task<int> ExecuteStateChangeScalarAsync(string sql, object sqlParams, int? userId, string reason, string? note)
+    {
         return ExecuteSafeAsync(async conn =>
         {
-            var appointment = await conn.ExecuteScalarAsync<int>(command, new
-            {
-                AppointmentId = appointmentId,
-                PatientId = patientId
-            });
+            using var tx = conn.BeginTransaction();
 
-            return await GetByIdAsync(appointment);
+            await conn.ExecuteAsync("SELECT set_config('app.current_user_id', @v, true);",
+                new { v = userId?.ToString() ?? string.Empty }, tx);
+            await conn.ExecuteAsync("SELECT set_config('app.state_change_reason', @v, true);",
+                new { v = reason }, tx);
+            await conn.ExecuteAsync("SELECT set_config('app.state_change_note', @v, true);",
+                new { v = note ?? string.Empty }, tx);
 
+            var affected = await conn.ExecuteScalarAsync<int>(sql, sqlParams, tx);
+
+            tx.Commit();
+            return affected;
         }, dbConnectionFactory);
     }
 
@@ -64,9 +104,9 @@ public class AppointmentRepository(IDbConnectionFactory dbConnectionFactory) : R
         }, dbConnectionFactory);
     }
 
-    public Task<IEnumerable<AppointmentFlatDto>> GetAllAsync(string dateSelected, int? specialityId, int? doctorId, bool? isOccuped, int? limit, int? offset)
+    public Task<IEnumerable<AppointmentFlatDto>> GetAllAsync(string dateSelected, int? specialityId, int? doctorId, bool? isOccuped, int? limit, int? offset, string? state)
     {
-        const string query = "SELECT * FROM get_all_appointments(@DateSelected::date, @SpecialityId, @DoctorId, @IsOccuped, @Limit, @Offset);";
+        const string query = "SELECT * FROM get_all_appointments(@DateSelected::date, @SpecialityId, @DoctorId, @IsOccuped, @Limit, @Offset, @StateCode);";
 
         return ExecuteSafeAsync(async conn =>
         {
@@ -77,7 +117,8 @@ public class AppointmentRepository(IDbConnectionFactory dbConnectionFactory) : R
                 DoctorId = doctorId,
                 IsOccuped = isOccuped,
                 Limit = limit,
-                Offset = offset
+                Offset = offset,
+                StateCode = state
             });
             return appointments;
         }, dbConnectionFactory);
@@ -144,18 +185,30 @@ public class AppointmentRepository(IDbConnectionFactory dbConnectionFactory) : R
         }, dbConnectionFactory);
     }
 
+    public Task<IEnumerable<(int AppointmentId, string ToState)>> ProcessTransitionsAsync()
+    {
+        const string query = "SELECT * FROM process_appointment_transitions();";
+
+        return ExecuteSafeAsync(async conn =>
+                await conn.QueryAsync<(int AppointmentId, string ToState)>(query),
+            dbConnectionFactory);
+    }
+
     public Task<IEnumerable<int>> GetAppointmentsForRemindersAsync(int hoursAhead)
     {
+        // Solo citas 'asignada' y futuras. La hora se compara en zona de Bogotá
+        // porque date_appointment + start_hour es hora de pared local (sin zona)
+        // y la sesión corre en GMT.
         const string query = """
-                             SELECT id
-                             FROM appointments
-                             WHERE is_occuped = true
-                               AND patient_id IS NOT NULL
-                               AND date_appointment + start_hour <= (NOW() + (interval '1 hour' * @Hours))
-                               AND date_appointment + start_hour > NOW()
+                             SELECT a.id
+                             FROM appointments a
+                             WHERE a.state_id = (SELECT id FROM appointment_states WHERE code = 'asignada')
+                               AND a.patient_id IS NOT NULL
+                               AND (a.date_appointment + a.start_hour) <= ((now() AT TIME ZONE 'America/Bogota') + (interval '1 hour' * @Hours))
+                               AND (a.date_appointment + a.start_hour) >  (now() AT TIME ZONE 'America/Bogota')
                                AND (
-                                   (@Hours = 24 AND reminder_24h_sent = false) OR
-                                   (@Hours = 2  AND reminder_2h_sent = false)
+                                   (@Hours = 24 AND a.reminder_24h_sent = false) OR
+                                   (@Hours = 2  AND a.reminder_2h_sent = false)
                                );
                              """;
 

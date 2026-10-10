@@ -35,9 +35,9 @@ public class AppointmentsController(IAppointmentService appointmentService) : Ba
 
     [HttpGet("dates/{dateSelected}/filters",  Name = "GetAllAppointments")]
     [EnableRateLimiting("UserPolicy")]
-    public async Task<IActionResult> GetAll([FromRoute] string dateSelected, [FromQuery] int? specialityId, [FromQuery] int? doctorId, [FromQuery] bool? isOccuped, [FromQuery] int? limit, [FromQuery] int? offset)
+    public async Task<IActionResult> GetAll([FromRoute] string dateSelected, [FromQuery] int? specialityId, [FromQuery] int? doctorId, [FromQuery] bool? isOccuped, [FromQuery] int? limit, [FromQuery] int? offset, [FromQuery] string? state)
     {
-        var appointments = await appointmentService.GetAllAsync(dateSelected, specialityId, doctorId, isOccuped, limit, offset);
+        var appointments = await appointmentService.GetAllAsync(dateSelected, specialityId, doctorId, isOccuped, limit, offset, state);
         return OkResponse(appointments);
     }
 
@@ -69,6 +69,22 @@ public class AppointmentsController(IAppointmentService appointmentService) : Ba
     {
         var appointment = await appointmentService.AssignAppointmentAsync(dto);
         return OkResponse(appointment);
+    }
+
+    [HttpPost("{id:int}/cancel", Name = "CancelAppointment")]
+    [EnableRateLimiting("UserPolicy")]
+    public async Task<IActionResult> Cancel([FromRoute] int id, [FromBody] AppointmentStateChangeRequestDto? dto)
+    {
+        var appointment = await appointmentService.CancelAppointmentAsync(id, dto?.Note);
+        return OkResponse(appointment, "Cita cancelada satisfactoriamente");
+    }
+
+    [HttpPost("{id:int}/no-show", Name = "MarkNoShowAppointment")]
+    [EnableRateLimiting("UserPolicy")]
+    public async Task<IActionResult> MarkNoShow([FromRoute] int id, [FromBody] AppointmentStateChangeRequestDto? dto)
+    {
+        var appointment = await appointmentService.MarkNoShowAsync(id, dto?.Note);
+        return OkResponse(appointment, "Cita marcada como 'no asistió' satisfactoriamente");
     }
 
     [AllowAnonymous]

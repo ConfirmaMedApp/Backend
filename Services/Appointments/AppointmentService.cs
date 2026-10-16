@@ -313,13 +313,17 @@ public class AppointmentService(
         );
     }
 
-    public async Task<IEnumerable<AppointmentResponseDto>> GetAllByUserAsync(string dateSelected, int? specialityId, int? limit, int? offset)
+    public async Task<IEnumerable<AppointmentResponseDto>> GetAllByUserAsync(string dateSelected, int? specialityId, int? limit, int? offset, string? state)
     {
         var loggedUserId = currentUserService.UserId
             ?? throw new UnauthorizedException("No te encuentras autenticado");
 
-        // Regla de negocio: este endpoint devuelve únicamente las citas ocupadas.
-        var appointments = await appointmentRepository.GetAllByUserAsync(dateSelected, loggedUserId, specialityId, isOccuped: true, limit, offset);
+        // Si se filtra por estado, ese filtro manda y no forzamos "solo ocupadas"
+        // (así ?state=libre también funciona). Sin estado, se mantiene la regla
+        // de negocio por defecto: únicamente las citas ocupadas.
+        bool? isOccuped = state is null ? true : null;
+
+        var appointments = await appointmentRepository.GetAllByUserAsync(dateSelected, loggedUserId, specialityId, isOccuped, limit, offset, state);
         return mapper.Map<IEnumerable<AppointmentResponseDto>>(appointments);
     }
 

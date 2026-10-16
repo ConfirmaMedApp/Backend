@@ -193,13 +193,16 @@ Lista las citas de una fecha, con filtros. **Nuevo:** filtro por estado.
 
 ### GET `/api/appointments/user/dates/{dateSelected}/filters` — Auth
 
-Citas del doctor del usuario autenticado para una fecha. Por regla de negocio devuelve solo citas ocupadas.
+Citas del doctor del usuario autenticado para una fecha.
 
 | Parámetro | En | Tipo | Descripción |
 |---|---|---|---|
 | `dateSelected` | ruta | date | Fecha |
+| `state` | query | string | Filtra por código de estado, p.ej. `libre` **(NUEVO)** |
 | `specialityId` | query | int? | Filtra por especialidad |
 | `limit` / `offset` | query | int? | Paginación |
+
+**Comportamiento del `state`:** si mandas `state`, filtra por ese estado. Si **no** lo mandas, se mantiene la regla por defecto: devuelve **solo citas ocupadas**.
 
 **Respuesta (200):** arreglo de objetos Appointment.
 

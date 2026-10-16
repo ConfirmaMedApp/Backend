@@ -43,9 +43,9 @@ public class AppointmentsController(IAppointmentService appointmentService) : Ba
 
     [HttpGet("user/dates/{dateSelected}/filters", Name = "GetAllAppointmentsByUser")]
     [EnableRateLimiting("UserPolicy")]
-    public async Task<IActionResult> GetAllByUser([FromRoute] string dateSelected, [FromQuery] int? specialityId, [FromQuery] int? limit, [FromQuery] int? offset)
+    public async Task<IActionResult> GetAllByUser([FromRoute] string dateSelected, [FromQuery] int? specialityId, [FromQuery] int? limit, [FromQuery] int? offset, [FromQuery] string? state)
     {
-        var appointments = await appointmentService.GetAllByUserAsync(dateSelected, specialityId, limit, offset);
+        var appointments = await appointmentService.GetAllByUserAsync(dateSelected, specialityId, limit, offset, state);
         return OkResponse(appointments);
     }
 

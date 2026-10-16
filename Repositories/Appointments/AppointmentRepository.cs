@@ -291,9 +291,9 @@ public class AppointmentRepository(IDbConnectionFactory dbConnectionFactory) : R
         }, dbConnectionFactory);
     }
 
-    public Task<IEnumerable<AppointmentFlatDto>> GetAllByUserAsync(string dateSelected, int userId, int? specialityId, bool? isOccuped, int? limit, int? offset)
+    public Task<IEnumerable<AppointmentFlatDto>> GetAllByUserAsync(string dateSelected, int userId, int? specialityId, bool? isOccuped, int? limit, int? offset, string? state)
     {
-        const string query = "SELECT * FROM get_all_appointments_by_user(@DateSelected::date, @UserId, @SpecialityId, @IsOccuped, @Limit, @Offset);";
+        const string query = "SELECT * FROM get_all_appointments_by_user(@DateSelected::date, @UserId, @SpecialityId, @IsOccuped, @Limit, @Offset, @StateCode);";
 
         return ExecuteSafeAsync(async conn =>
         {
@@ -304,7 +304,8 @@ public class AppointmentRepository(IDbConnectionFactory dbConnectionFactory) : R
                 SpecialityId = specialityId,
                 IsOccuped = isOccuped,
                 Limit = limit,
-                Offset = offset
+                Offset = offset,
+                StateCode = state
             });
             return appointments;
         }, dbConnectionFactory);

@@ -21,6 +21,11 @@ declare
     v_en    int := (select id from appointment_states where code = 'en_atencion');
     v_fin   int := (select id from appointment_states where code = 'finalizada');
 begin
+    -- Blindaje de auditoría: las transiciones automáticas son del sistema y sin nota.
+    -- Se limpian explícitamente para que nunca hereden valores de otra operación.
+    perform set_config('app.current_user_id', '', true);
+    perform set_config('app.state_change_note', '', true);
+
     -- asignada -> en_atencion (llegó la hora de inicio)
     perform set_config('app.state_change_reason', 'inicio_automatico', true);
     return query

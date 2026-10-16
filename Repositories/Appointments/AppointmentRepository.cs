@@ -93,15 +93,16 @@ public class AppointmentRepository(IDbConnectionFactory dbConnectionFactory) : R
             new { Dates = dates, StartHour = startHour, EndHour = endHour, DoctorId = doctorId }), dbConnectionFactory);
     }
 
-    public Task<AppointmentFlatDto?> RescheduleToSlotAsync(int oldAppointmentId, int newAppointmentId)
+    public async Task<AppointmentFlatDto?> RescheduleToSlotAsync(int oldAppointmentId, int newAppointmentId, int? userId, string? note)
     {
-        const string command = "SELECT * FROM reschedule_to_slot(@OldAppointmentId, @NewAppointmentId);";
+        // reschedule_to_slot devuelve el id del NUEVO turno, o 0 si la operación
+        // no aplicó (el viejo ya no estaba 'asignada' o el nuevo ya no estaba 'libre').
+        var newId = await ExecuteStateChangeScalarAsync(
+            "SELECT reschedule_to_slot(@OldId, @NewId);",
+            new { OldId = oldAppointmentId, NewId = newAppointmentId },
+            userId, "reagendamiento", note);
 
-        return ExecuteSafeAsync(async conn =>
-        {
-            var reschedule = await conn.ExecuteScalarAsync<int>(command, new { OldAppointmentId = oldAppointmentId, NewAppointmentId = newAppointmentId });
-            return await GetByIdAsync(reschedule);
-        }, dbConnectionFactory);
+        return newId == 0 ? null : await GetByIdAsync(newId);
     }
 
     public Task<IEnumerable<AppointmentFlatDto>> GetAllAsync(string dateSelected, int? specialityId, int? doctorId, bool? isOccuped, int? limit, int? offset, string? state)
@@ -239,6 +240,15 @@ public class AppointmentRepository(IDbConnectionFactory dbConnectionFactory) : R
         const string query = "SELECT * FROM has_patient_assigned(@OldAppointmentId);";
         
         return ExecuteSafeAsync(async conn => await conn.ExecuteScalarAsync<bool>(query, new { OldAppointmentId = oldAppointmentId }), dbConnectionFactory);
+    }
+
+    public Task<IEnumerable<AppointmentHistoryFlatDto>> GetHistoryAsync(int appointmentId)
+    {
+        const string query = "SELECT * FROM get_appointment_history(@Id);";
+
+        return ExecuteSafeAsync(async conn =>
+                await conn.QueryAsync<AppointmentHistoryFlatDto>(query, new { Id = appointmentId }),
+            dbConnectionFactory);
     }
 
     public Task<AppointmentVideoContextDto?> GetVideoContextAsync(int appointmentId)

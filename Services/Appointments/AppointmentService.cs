@@ -1,4 +1,5 @@
-﻿using AutoMapper;
+﻿using System.Globalization;
+using AutoMapper;
 using Backend.DTOs.Appointments.Requests;
 using Backend.DTOs.Appointments.Responses;
 using Backend.DTOs.Emails;
@@ -16,6 +17,7 @@ using Backend.Services.Bird;
 using Backend.Services.Offices;
 using Backend.Services.Patients;
 using Backend.Services.Users;
+using Backend.DTOs.Users.Responses;
 using FluentValidation;
 
 namespace Backend.Services.Appointments;
@@ -125,6 +127,10 @@ public class AppointmentService(
         return mapper.Map<AppointmentResponseDto>(result);
     }
 
+    // Combina fecha (yyyy-MM-dd) y hora de inicio (HH:mm:ss) en un instante comparable.
+    private static DateTime StartOf(AppointmentResponseDto a) =>
+        DateTime.ParseExact($"{a.DateAppointment} {a.StartHour}", "yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture);
+
     public async Task ProcessAutomaticTransitionsAsync()
     {
         var changed = await appointmentRepository.ProcessTransitionsAsync();
@@ -208,7 +214,26 @@ public class AppointmentService(
             throw new BadRequestException(errors);
         }
 
-        var reschedule = await appointmentRepository.RescheduleToSlotAsync(dto.OldAppointmentId, dto.NewAppointmentId);
+        var oldAppointment = await GetByIdAsync(dto.OldAppointmentId);
+        var newAppointment = await GetByIdAsync(dto.NewAppointmentId);
+
+        if (oldAppointment.State.Code != "asignada")
+            throw new ConflictException("Solo se pueden reagendar citas en estado 'asignada'");
+
+        if (newAppointment.State.Code != "libre")
+            throw new ConflictException("El turno destino no está disponible");
+
+        if (newAppointment.Speciality.Id != oldAppointment.Speciality.Id)
+            throw new BadRequestException("El turno destino debe ser de la misma especialidad");
+
+        if (StartOf(newAppointment) <= StartOf(oldAppointment))
+            throw new BadRequestException("El turno destino debe ser posterior a la cita original");
+
+        // La operación es atómica en DB; si el destino fue tomado en el intermedio
+        // devuelve null y respondemos 409 en vez de pisar la asignación.
+        var reschedule = await appointmentRepository.RescheduleToSlotAsync(
+                dto.OldAppointmentId, dto.NewAppointmentId, currentUserService.UserId, dto.Note)
+            ?? throw new ConflictException("El turno destino ya no está disponible");
 
         // Al liberar el slot viejo, borramos su room en Daily y limpiamos las columnas en DB.
         // El nuevo slot NO se auto-provisiona (evita consumir cupo mensual sin decisión explícita);
@@ -237,6 +262,47 @@ public class AppointmentService(
     {
         var appointment = await appointmentRepository.GetByIdAsync(id);
         return mapper.Map<AppointmentResponseDto>(appointment) ?? throw new NotFoundException("Cita no encontrada");
+    }
+
+    public async Task<IEnumerable<AppointmentHistoryResponseDto>> GetHistoryAsync(int appointmentId)
+    {
+        // 404 si la cita no existe.
+        _ = await GetByIdAsync(appointmentId);
+
+        var rows = await appointmentRepository.GetHistoryAsync(appointmentId);
+
+        return rows.Select(h => new AppointmentHistoryResponseDto
+        {
+            Id = h.Id,
+            FromState = h.FromStateId.HasValue
+                ? new AppointmentStateDto
+                {
+                    Id = h.FromStateId.Value,
+                    Code = h.FromStateCode ?? string.Empty,
+                    Name = h.FromStateName ?? string.Empty,
+                    Color = h.FromStateColor ?? string.Empty
+                }
+                : null,
+            ToState = new AppointmentStateDto
+            {
+                Id = h.ToStateId,
+                Code = h.ToStateCode,
+                Name = h.ToStateName,
+                Color = h.ToStateColor
+            },
+            Reason = h.Reason,
+            Note = h.Note,
+            ChangedBy = h.ChangedById.HasValue
+                ? new UserMinimalDto
+                {
+                    Id = h.ChangedById.Value,
+                    Name = h.ChangedByName ?? string.Empty,
+                    Lastname = h.ChangedByLastname ?? string.Empty,
+                    Role = h.ChangedByRole ?? string.Empty
+                }
+                : null,
+            CreatedAt = h.CreatedAt
+        }).ToList();
     }
 
     public async Task<IEnumerable<AppointmentResponseDto>> GetByPatientNeedAppointmentAsync(int specialityId, string startHour, string dateSelected)

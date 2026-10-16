@@ -17,11 +17,12 @@ public interface IAppointmentRepository
         string endHour,
         int doctorId);
     
-    Task<AppointmentFlatDto?> RescheduleToSlotAsync(int oldAppointmentId, int newAppointmentId);
+    Task<AppointmentFlatDto?> RescheduleToSlotAsync(int oldAppointmentId, int newAppointmentId, int? userId, string? note);
     Task<IEnumerable<(DateOnly CalendarDate, string StatusDay, string Color)>> GetOccupationAppointmentsPerMonthAsync(int year, int month, int? doctorId);
     Task<IEnumerable<AppointmentFlatDto>> GetAllAsync(string dateSelected, int? specialityId, int? doctorId, bool? isOccuped, int? limit, int? offset, string? state);
     Task<IEnumerable<AppointmentFlatDto>> GetAllByUserAsync(string dateSelected, int userId, int? specialityId, bool? isOccuped, int? limit, int? offset, string? state);
     Task<AppointmentFlatDto?> GetByIdAsync(int id);
+    Task<IEnumerable<AppointmentHistoryFlatDto>> GetHistoryAsync(int appointmentId);
     Task<AppointmentFlatDto?> AssignAppointmentAsync(int appointmentId, int patientId, int? userId);
     Task<AppointmentFlatDto?> CancelAppointmentAsync(int appointmentId, int? userId, string? note);
     Task<AppointmentFlatDto?> MarkNoShowAsync(int appointmentId, int? userId, string? note);

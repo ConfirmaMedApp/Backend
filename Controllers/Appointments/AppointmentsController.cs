@@ -87,6 +87,14 @@ public class AppointmentsController(IAppointmentService appointmentService) : Ba
         return OkResponse(appointment, "Cita marcada como 'no asistió' satisfactoriamente");
     }
 
+    [HttpGet("{id:int}/history", Name = "GetAppointmentHistory")]
+    [EnableRateLimiting("UserPolicy")]
+    public async Task<IActionResult> GetHistory([FromRoute] int id)
+    {
+        var history = await appointmentService.GetHistoryAsync(id);
+        return OkResponse(history, "Historial obtenido satisfactoriamente");
+    }
+
     [AllowAnonymous]
     [HttpGet("{id:int}", Name = "GetAppointmentById")]
     [EnableRateLimiting("ClientPolicy")]

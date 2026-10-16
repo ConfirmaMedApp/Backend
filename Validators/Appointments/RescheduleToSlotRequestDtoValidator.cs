@@ -1,25 +1,20 @@
 using Backend.DTOs.Appointments.Requests;
-using Backend.Repositories.Appointments;
 using FluentValidation;
 
 namespace Backend.Validators.Appointments;
 
 public class RescheduleToSlotRequestDtoValidator : AbstractValidator<RescheduleToSlotRequestDto>
 {
-    public  RescheduleToSlotRequestDtoValidator(IAppointmentRepository appointmentRepository)
+    public RescheduleToSlotRequestDtoValidator()
     {
         RuleFor(x => x.OldAppointmentId)
-            .MustAsync(async (id, cancellation) => 
-                await appointmentRepository.HasPatientAssignedAsync(id))
-            .WithMessage("La cita de origen no tiene un paciente asignado.");
+            .GreaterThan(0).WithMessage("La cita de origen no es válida.");
 
         RuleFor(x => x.NewAppointmentId)
-            .MustAsync(async (id, cancellation) => 
-                await appointmentRepository.IsSlotAvailableAsync(id))
-            .WithMessage("El turno de destino ya no está disponible.");
-            
+            .GreaterThan(0).WithMessage("El turno de destino no es válido.");
+
         RuleFor(x => x)
             .Must(x => x.OldAppointmentId != x.NewAppointmentId)
-            .WithMessage("No puedes reprogramar una cita al mismo horario.");
+            .WithMessage("No puedes reprogramar una cita al mismo turno.");
     }
 }

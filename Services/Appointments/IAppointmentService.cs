@@ -19,6 +19,7 @@ public interface IAppointmentService
     Task ProcessAutomaticTransitionsAsync();
     Task ProcessRemindersAsync(int hoursAhead);
     Task<AppointmentResponseDto> GetByIdAsync(int id);
+    Task<IEnumerable<AppointmentHistoryResponseDto>> GetHistoryAsync(int appointmentId);
     Task<IEnumerable<AppointmentResponseDto>> GetByPatientNeedAppointmentAsync(int specialityId, string startHour, string dateSelected);
     Task<IEnumerable<AppointmentResponseDto>> GetRecommendationsForPatientAsync(int specialityId, string dateSelected);
     Task SendConfirmationEmailAsync(PatientResponseDto patientResponseDto, OfficeResponseDto officeResponseDto, AppointmentResponseDto appointmentResponseDto, string? videoCallLink = null);

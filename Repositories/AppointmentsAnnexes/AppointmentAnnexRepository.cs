@@ -11,10 +11,10 @@ public class AppointmentAnnexRepository(IDbConnectionFactory dbConnectionFactory
 {
     public Task<AppointmentFlatDto?> CreateAsync(AppointmentAnnex appointmentAnnex)
     {
-        const string command = "SELECT * FROM create_appointment_annex(@File, @Name, @AppointmentId);";
+        const string command = "SELECT * FROM create_appointment_annex(@File, @Name, @AppointmentId, @PatientId);";
         return ExecuteSafeAsync(async conn =>
         {
-            var createAppointmentAnnex = await conn.ExecuteScalarAsync<int>(command, new { appointmentAnnex.File, appointmentAnnex.Name, appointmentAnnex.AppointmentId });
+            var createAppointmentAnnex = await conn.ExecuteScalarAsync<int>(command, new { appointmentAnnex.File, appointmentAnnex.Name, appointmentAnnex.AppointmentId, appointmentAnnex.PatientId });
             return await appointmentRepository.GetByIdAsync(createAppointmentAnnex);
         }, dbConnectionFactory);
     }

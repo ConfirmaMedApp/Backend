@@ -7,5 +7,6 @@ public class AppointmentAnnexResponseDto
     public int Id { get; set; }
     public string File { get; set; } = string.Empty;
     public string Name { get; set; } = string.Empty;
+    public int? PatientId { get; set; }
     public AppointmentMinimalDto Appointment { get; set; } = new();
 }

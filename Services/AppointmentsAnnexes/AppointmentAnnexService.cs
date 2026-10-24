@@ -16,6 +16,7 @@ public class AppointmentAnnexService(IAppointmentAnnexRepository appointmentAnne
         var appointmentId = dtos[0].AppointmentId;
 
         var appointment = await appointmentService.GetByIdAsync(appointmentId);
+        var patientId = appointment?.Patient?.Id;
         var patientDocument = appointment?.Patient?.Document;
         if (string.IsNullOrWhiteSpace(patientDocument))
             patientDocument = "sin-documento";
@@ -29,6 +30,7 @@ public class AppointmentAnnexService(IAppointmentAnnexRepository appointmentAnne
             var appointmentAnnex = mapper.Map<AppointmentAnnex>(dto);
             appointmentAnnex.File = cloudinaryUrl;
             appointmentAnnex.Name = dto.File.FileName;
+            appointmentAnnex.PatientId = patientId;
 
             return await appointmentAnnexRepository.CreateAsync(appointmentAnnex);
         });

@@ -8,4 +8,5 @@ public class AppointmentAnnexFlatDto
     public int AppointmentId { get; set; }
     public string AppointmentDateAppointment { get; set; } = string.Empty;
     public string AppointmentStartHour { get; set; } = string.Empty;
+    public int? PatientId { get; set; }
 }

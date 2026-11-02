@@ -81,6 +81,29 @@ public class AppointmentRepository(IDbConnectionFactory dbConnectionFactory) : R
                 UserId = userId
             });
 
+            // Copia el precio (USD) del combo doctor+especialidad a las citas recién creadas.
+            // Defensivo: si la columna price_usd aún no existe en la BD, no rompe la creación de la agenda.
+            try
+            {
+                const string assignPrice = """
+                    UPDATE appointments a
+                    SET price_usd = dhs.price_usd
+                    FROM doctors_has_specialities dhs
+                    WHERE a.doctor_id = @DoctorId
+                      AND a.speciality_id = @SpecialityId
+                      AND dhs.doctor_id = a.doctor_id
+                      AND dhs.speciality_id = a.speciality_id
+                      AND a.date_appointment = ANY(@Dates::date[])
+                      AND a.price_usd IS NULL;
+                    """;
+
+                await conn.ExecuteAsync(assignPrice, new { DoctorId = doctorId, SpecialityId = specialityId, Dates = dates });
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[price-assign] No se pudo asignar el precio a la agenda: {ex.Message}");
+            }
+
             return diary;
         }, dbConnectionFactory);
     }

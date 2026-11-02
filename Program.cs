@@ -10,6 +10,10 @@ using Backend.Repositories;
 using Backend.Services;
 using Backend.Services.Appointments.Background;
 using Backend.Services.Daily;
+using Backend.Entities.Wompi;
+using Backend.Entities.Trm;
+using Backend.Services.Wompi;
+using Backend.Services.Trm;
 using FluentValidation;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
@@ -79,6 +83,41 @@ builder.Services.AddHttpClient<IDailyApiService, DailyApiService>((sp, client) =
     client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", apiKey);
     client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
 });
+
+// Wompi (pagos / enlaces de pago)
+builder.Services.Configure<WompiSettings>(
+    builder.Configuration.GetSection("Wompi")
+);
+
+builder.Services.AddHttpClient<IWompiService, WompiService>((sp, client) =>
+{
+    var settings = sp.GetRequiredService<IOptions<WompiSettings>>().Value;
+
+    var baseUrl = settings.BaseUrl.EndsWith('/') ? settings.BaseUrl : settings.BaseUrl + "/";
+    client.BaseAddress = new Uri(baseUrl);
+
+    var privateKey = !string.IsNullOrWhiteSpace(settings.PrivateKey)
+        ? settings.PrivateKey
+        : Environment.GetEnvironmentVariable("Wompi__PrivateKey");
+
+    if (!string.IsNullOrWhiteSpace(privateKey))
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", privateKey);
+
+    client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+});
+
+// TRM oficial (datos.gov.co) con caché
+builder.Services.Configure<TrmSettings>(
+    builder.Configuration.GetSection("Trm")
+);
+
+builder.Services.AddHttpClient<ITrmService, TrmService>((_, client) =>
+{
+    client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+    client.Timeout = TimeSpan.FromSeconds(10);
+});
+
+builder.Services.AddMemoryCache();
 
 // Repositories & Services
 builder.Services.AddRepositories();

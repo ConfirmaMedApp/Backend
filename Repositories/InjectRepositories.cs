@@ -8,6 +8,7 @@ using Backend.Repositories.DocumentTypes;
 using Backend.Repositories.Durations;
 using Backend.Repositories.Genders;
 using Backend.Repositories.Offices;
+using Backend.Repositories.Payments;
 using Backend.Repositories.Specialities;
 using Backend.Repositories.Users;
 using Backend.Repositories.VideoCalls;
@@ -45,6 +46,8 @@ public static class InjectRepositories
         services.AddTransient<IAppointmentNoteRepository, AppointmentNoteRepository>();
 
         services.AddTransient<IVideoCallUsageRepository, VideoCallUsageRepository>();
+
+        services.AddTransient<IAppointmentPaymentRepository, AppointmentPaymentRepository>();
 
         return services;
     }

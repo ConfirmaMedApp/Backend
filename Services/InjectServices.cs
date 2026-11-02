@@ -15,6 +15,7 @@ using Backend.Services.Bird;
 using Backend.Services.CloudinaryUpload;
 using Backend.Services.AppointmentsAnnexes;
 using Backend.Services.AppointmentsNotes;
+using Backend.Services.Payments;
 
 namespace Backend.Services;
 
@@ -54,6 +55,8 @@ public static class InjectServices
         services.AddScoped<IAppointmentAnnexService, AppointmentAnnexService>();
 
         services.AddScoped<IAppointmentNoteService, AppointmentNoteService>();
+
+        services.AddScoped<IAppointmentPaymentService, AppointmentPaymentService>();
 
         return services;
     }

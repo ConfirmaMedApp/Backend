@@ -1,5 +1,7 @@
 ﻿using Backend.DTOs.Appointments.Requests;
+using Backend.DTOs.Payments.Requests;
 using Backend.Services.Appointments;
+using Backend.Services.Payments;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
@@ -7,7 +9,9 @@ using Microsoft.AspNetCore.RateLimiting;
 namespace Backend.Controllers.Appointments;
 
 [Authorize]
-public class AppointmentsController(IAppointmentService appointmentService) : BaseControllerCustom
+public class AppointmentsController(
+    IAppointmentService appointmentService,
+    IAppointmentPaymentService appointmentPaymentService) : BaseControllerCustom
 {
     [HttpPost(Name = "CreateSeveralAppointments")]
     [EnableRateLimiting("UserPolicy")]
@@ -144,5 +148,29 @@ public class AppointmentsController(IAppointmentService appointmentService) : Ba
     {
         await appointmentService.DeprovisionVideoCallAsync(id);
         return OkResponse<object?>(null, "Videollamada eliminada satisfactoriamente");
+    }
+
+    [HttpPost("{id:int}/payment-link", Name = "GenerateAppointmentPaymentLink")]
+    [EnableRateLimiting("UserPolicy")]
+    public async Task<IActionResult> GeneratePaymentLink([FromRoute] int id, [FromBody] GeneratePaymentLinkRequestDto? dto)
+    {
+        var result = await appointmentPaymentService.GeneratePaymentLinkAsync(id, dto?.SendEmail ?? false);
+        return CreatedResponse(result, "Enlace de pago generado satisfactoriamente");
+    }
+
+    [HttpGet("{id:int}/pricing", Name = "GetAppointmentPricing")]
+    [EnableRateLimiting("UserPolicy")]
+    public async Task<IActionResult> GetPricing([FromRoute] int id)
+    {
+        var result = await appointmentPaymentService.GetPricingAsync(id);
+        return OkResponse(result);
+    }
+
+    [HttpGet("{id:int}/payment", Name = "GetAppointmentPaymentStatus")]
+    [EnableRateLimiting("UserPolicy")]
+    public async Task<IActionResult> GetPaymentStatus([FromRoute] int id)
+    {
+        var result = await appointmentPaymentService.GetPaymentStatusAsync(id);
+        return OkResponse(result);
     }
 }

@@ -7,6 +7,8 @@ public interface IDoctorService
 {
     Task<IEnumerable<DoctorResponseDto>> GetAllAsync(int? limit, int? offset, bool? status, string search = "");
     Task<DoctorResponseDto> GetByIdAsync(int id);
+    Task<DoctorProfileResponseDto> GetProfileAsync(int id);
     Task<DoctorResponseDto> CreateAsync(DoctorRequestCreateDto dto);
     Task<DoctorResponseDto> UpdateAsync(DoctorRequestUpdateDto dto);
+    Task<DoctorResponseDto> UpdatePhotoAsync(int id, DoctorPhotoRequestDto dto);
 }

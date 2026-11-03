@@ -31,6 +31,9 @@ public class DoctorRequestUpdateDtoValidator : AbstractValidator<DoctorRequestUp
             .EmailAddress().WithMessage("El correo electronico debe ser valido")
             .MaximumLength(100).WithMessage("El correo electronico no puede exceder os 100 caracteres");
 
+        RuleFor(x => x.Description)
+            .MaximumLength(1000).WithMessage("La descripción no puede exceder los 1000 caracteres");
+
         RuleFor(x => x.Status)
             .NotNull().WithMessage("El estado es obligatorio");
 

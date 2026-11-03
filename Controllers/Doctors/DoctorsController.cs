@@ -26,6 +26,15 @@ public class DoctorsController(IDoctorService doctorService) : BaseControllerCus
         return OkResponse(result);
     }
 
+    [AllowAnonymous]
+    [HttpGet("{id:int}/profile", Name = "GetDoctorProfile")]
+    [EnableRateLimiting("UserPolicy")]
+    public async Task<IActionResult> GetProfile(int id)
+    {
+        var result = await doctorService.GetProfileAsync(id);
+        return OkResponse(result);
+    }
+
     [HttpPost(Name = "CreateDoctor")]
     [EnableRateLimiting("UserPolicy")]
     public async Task<IActionResult> Create([FromBody] DoctorRequestCreateDto dto)
@@ -40,5 +49,13 @@ public class DoctorsController(IDoctorService doctorService) : BaseControllerCus
     {
         var result = await doctorService.UpdateAsync(dto);
         return OkResponse(result);
+    }
+
+    [HttpPut("{id:int}/photo", Name = "UpdateDoctorPhoto")]
+    [EnableRateLimiting("UserPolicy")]
+    public async Task<IActionResult> UpdatePhoto(int id, [FromForm] DoctorPhotoRequestDto dto)
+    {
+        var result = await doctorService.UpdatePhotoAsync(id, dto);
+        return OkResponse(result, "Foto actualizada satisfactoriamente");
     }
 }

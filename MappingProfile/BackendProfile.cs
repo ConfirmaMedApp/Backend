@@ -55,6 +55,14 @@ public class BackendProfile : Profile
                     Id = src.DocumentTypeId,
                     Name = src.DocumentTypeName
                 }));
+        CreateMap<DoctorFlatDto, DoctorProfileResponseDto>()
+            .ForMember(dest => dest.DocumentType, opt => opt.MapFrom(src =>
+                new DocumentTypeResponseDto
+                {
+                    Id = src.DocumentTypeId,
+                    Name = src.DocumentTypeName
+                }))
+            .ForMember(dest => dest.Specialities, opt => opt.Ignore());
         CreateMap<Doctor, DoctorRequestCreateDto>().ReverseMap();
         CreateMap<Doctor, DoctorRequestUpdateDto>().ReverseMap();
 

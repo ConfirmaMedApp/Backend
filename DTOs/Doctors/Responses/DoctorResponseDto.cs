@@ -10,5 +10,7 @@ public class DoctorResponseDto
     public string Document { get; set; } = string.Empty;
     public DocumentTypeResponseDto DocumentType { get; set; } = new();
     public string Email { get; set; } = string.Empty;
+    public string? Description { get; set; }
+    public string? PhotoUrl { get; set; }
     public bool Status { get; set; }
 }

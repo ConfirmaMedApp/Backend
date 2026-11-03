@@ -1,4 +1,5 @@
 using Backend.DTOs.Doctors.Responses;
+using Backend.DTOs.Specialities.Responses;
 using Backend.Entities.Doctors;
 using Backend.Persistence;
 using Dapper;
@@ -26,7 +27,7 @@ public class DoctorRepository(IDbConnectionFactory dbConnectionFactory) : Reposi
 
     public Task<DoctorFlatDto?> CreateAsync(Doctor doctor)
     {
-        const string command = "SELECT * FROM create_doctor(@Name, @LastName, @Document, @DocumentTypeId, @Email, @Status);";
+        const string command = "SELECT * FROM create_doctor(@Name, @LastName, @Document, @DocumentTypeId, @Email, @Status, @Description);";
         return ExecuteSafeAsync(async conn =>
         {
             var createdDoctor = await conn.ExecuteScalarAsync<int>(command, new
@@ -36,17 +37,18 @@ public class DoctorRepository(IDbConnectionFactory dbConnectionFactory) : Reposi
                 Document = doctor.Document.ToLower(),
                 doctor.DocumentTypeId,
                 Email = doctor.Email.ToLower(),
-                doctor.Status
+                doctor.Status,
+                doctor.Description
             });
 
             return await GetByIdAsync(createdDoctor);
-            
+
         }, dbConnectionFactory);
     }
 
     public Task<DoctorFlatDto?> UpdateAsync(Doctor doctor)
     {
-        const string command = "SELECT * FROM update_doctor(@Id, @Name, @LastName, @Document, @DocumentTypeId, @Email, @Status);";
+        const string command = "SELECT * FROM update_doctor(@Id, @Name, @LastName, @Document, @DocumentTypeId, @Email, @Status, @Description);";
         return ExecuteSafeAsync(async conn =>
         {
             var updatedDoctor = await conn.ExecuteScalarAsync<int>(command, new
@@ -57,12 +59,31 @@ public class DoctorRepository(IDbConnectionFactory dbConnectionFactory) : Reposi
                 Document = doctor.Document.ToLower(),
                 doctor.DocumentTypeId,
                 Email = doctor.Email.ToLower(),
-                doctor.Status
+                doctor.Status,
+                doctor.Description
             });
 
             return await GetByIdAsync(updatedDoctor);
-            
+
         }, dbConnectionFactory);
+    }
+
+    public Task<DoctorFlatDto?> UpdatePhotoAsync(int id, string? photoUrl)
+    {
+        const string command = "SELECT * FROM update_doctor_photo(@Id, @PhotoUrl);";
+        return ExecuteSafeAsync(async conn =>
+        {
+            var updatedDoctor = await conn.ExecuteScalarAsync<int>(command, new { Id = id, PhotoUrl = photoUrl });
+            return await GetByIdAsync(updatedDoctor);
+        }, dbConnectionFactory);
+    }
+
+    public Task<IEnumerable<SpecialityResponseDto>> GetSpecialitiesByDoctorAsync(int doctorId)
+    {
+        const string query = "SELECT * FROM get_specialities_by_doctor(@DoctorId);";
+        return ExecuteSafeAsync(async conn =>
+            await conn.QueryAsync<SpecialityResponseDto>(query, new { DoctorId = doctorId }),
+            dbConnectionFactory);
     }
 
     public Task<bool> IsDocumentAndDocumentTypeCombinationUnique(string document, int documentTypeId, int? excludedId = null)

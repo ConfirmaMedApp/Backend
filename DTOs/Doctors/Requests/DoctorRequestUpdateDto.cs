@@ -8,5 +8,6 @@ public class DoctorRequestUpdateDto
     public string Document { get; set; } = string.Empty;
     public int DocumentTypeId { get; set; }
     public string Email { get; set; } = string.Empty;
+    public string? Description { get; set; }
     public bool Status { get; set; }
 }

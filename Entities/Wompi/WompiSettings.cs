@@ -13,6 +13,10 @@ public class WompiSettings
     // Secreto de eventos: para verificar la firma de los webhooks.
     public string EventsSecret { get; set; } = string.Empty;
 
+    // Secreto de integridad: para firmar el Widget / Checkout Web embebido (si se usa).
+    // No se expone al frontend; se usa en el backend para calcular signature:integrity.
+    public string IntegritySecret { get; set; } = string.Empty;
+
     // A dónde vuelve el paciente tras pagar (página del frontend).
     public string RedirectUrl { get; set; } = string.Empty;
 

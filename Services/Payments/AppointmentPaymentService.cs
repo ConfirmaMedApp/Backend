@@ -97,6 +97,61 @@ public class AppointmentPaymentService(
         };
     }
 
+    public async Task<CheckoutConfigResultDto> GenerateCheckoutConfigAsync(int appointmentId, CancellationToken ct = default)
+    {
+        if (string.IsNullOrWhiteSpace(_wompi.PublicKey))
+            throw new BadRequestException("Wompi no está configurado para el widget (falta la llave pública)");
+
+        var info = await paymentRepository.GetAppointmentPaymentInfoAsync(appointmentId)
+            ?? throw new NotFoundException("Cita no encontrada");
+
+        var priceUsd = info.PriceUsd
+            ?? throw new BadRequestException(
+                "La cita no tiene precio configurado. Define el precio del doctor para esa especialidad primero.");
+
+        if (priceUsd <= 0)
+            throw new BadRequestException("El precio de la cita debe ser mayor a 0");
+
+        var trm = await trmService.GetUsdToCopAsync(ct);
+
+        // USD -> COP (pesos enteros) -> centavos que exige Wompi.
+        var pesos = Math.Round(priceUsd * trm, 0, MidpointRounding.AwayFromZero);
+        var amountInCents = (long)pesos * 100L;
+
+        const string currency = "COP";
+        var reference = $"CITA-{appointmentId}-{Guid.NewGuid():N}";
+        var signature = wompiService.BuildIntegritySignature(reference, amountInCents, currency);
+
+        // Persistimos el pago (sin link, con referencia) para correlacionar el webhook.
+        await paymentRepository.CreateAsync(new AppointmentPayment
+        {
+            AppointmentId = appointmentId,
+            WompiPaymentLinkId = null,
+            CheckoutUrl = null,
+            AmountUsd = priceUsd,
+            TrmUsed = trm,
+            AmountInCents = amountInCents,
+            Currency = currency,
+            WompiReference = reference,
+            Status = "PENDING",
+            ExpiresAt = null
+        });
+
+        return new CheckoutConfigResultDto
+        {
+            AppointmentId = appointmentId,
+            PublicKey = _wompi.PublicKey,
+            Currency = currency,
+            AmountInCents = amountInCents,
+            Reference = reference,
+            SignatureIntegrity = signature,
+            RedirectUrl = string.IsNullOrWhiteSpace(_wompi.RedirectUrl) ? null : _wompi.RedirectUrl,
+            AmountUsd = priceUsd,
+            Trm = trm,
+            AmountCop = pesos
+        };
+    }
+
     public async Task<AppointmentPricingResponseDto> GetPricingAsync(int appointmentId, CancellationToken ct = default)
     {
         var info = await paymentRepository.GetAppointmentPaymentInfoAsync(appointmentId)
@@ -167,18 +222,37 @@ public class AppointmentPaymentService(
             return true; // recibido pero sin acción
 
         var tx = evt.Data.Transaction;
-        if (tx is null || string.IsNullOrWhiteSpace(tx.PaymentLinkId))
-            return true; // transacción sin enlace asociado (no es un pago de cita)
+        if (tx is null)
+            return true;
 
         var status = string.IsNullOrWhiteSpace(tx.Status) ? "UNKNOWN" : tx.Status.ToUpperInvariant();
         var approved = status == "APPROVED";
         DateTime? paidAt = approved ? DateTime.UtcNow : null;
 
-        var appointmentId = await paymentRepository.ApplyTransactionUpdateAsync(
-            tx.PaymentLinkId, status, tx.Id, tx.Reference, paidAt, markAppointmentPaid: approved);
+        int? appointmentId;
+        string correlation;
+
+        if (!string.IsNullOrWhiteSpace(tx.PaymentLinkId))
+        {
+            // Flujo de ENLACES de pago.
+            correlation = $"payment_link_id {tx.PaymentLinkId}";
+            appointmentId = await paymentRepository.ApplyTransactionUpdateByLinkIdAsync(
+                tx.PaymentLinkId, status, tx.Id, tx.Reference, paidAt, markAppointmentPaid: approved);
+        }
+        else if (!string.IsNullOrWhiteSpace(tx.Reference))
+        {
+            // Flujo del WIDGET / Checkout Web embebido (sin payment_link_id, con reference).
+            correlation = $"reference {tx.Reference}";
+            appointmentId = await paymentRepository.ApplyTransactionUpdateByReferenceAsync(
+                tx.Reference, status, tx.Id, paidAt, markAppointmentPaid: approved);
+        }
+        else
+        {
+            return true; // transacción sin enlace ni referencia (no es un pago de cita)
+        }
 
         if (appointmentId is null)
-            logger.LogWarning("Webhook Wompi: no se encontró el pago para payment_link_id {LinkId}", tx.PaymentLinkId);
+            logger.LogWarning("Webhook Wompi: no se encontró el pago para {Correlation}", correlation);
         else
             logger.LogInformation("Webhook Wompi: cita {AppointmentId} -> pago {Status}", appointmentId, status);
 

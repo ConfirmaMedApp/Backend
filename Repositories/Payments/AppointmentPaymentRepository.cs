@@ -74,7 +74,7 @@ public class AppointmentPaymentRepository(IDbConnectionFactory dbConnectionFacto
             dbConnectionFactory);
     }
 
-    public Task<int?> ApplyTransactionUpdateAsync(
+    public Task<int?> ApplyTransactionUpdateByLinkIdAsync(
         string paymentLinkId,
         string status,
         string? transactionId,
@@ -93,20 +93,52 @@ public class AppointmentPaymentRepository(IDbConnectionFactory dbConnectionFacto
             RETURNING appointment_id;
             """;
 
+        return ApplyTransactionUpdateCoreAsync(updatePayment, new
+        {
+            Status = status,
+            TransactionId = transactionId,
+            Reference = reference,
+            PaidAt = paidAt,
+            PaymentLinkId = paymentLinkId
+        }, markAppointmentPaid);
+    }
+
+    public Task<int?> ApplyTransactionUpdateByReferenceAsync(
+        string reference,
+        string status,
+        string? transactionId,
+        DateTime? paidAt,
+        bool markAppointmentPaid)
+    {
+        const string updatePayment = """
+            UPDATE appointment_payments
+            SET status = @Status,
+                wompi_transaction_id = COALESCE(@TransactionId, wompi_transaction_id),
+                paid_at = COALESCE(@PaidAt, paid_at),
+                updated_at = now()
+            WHERE wompi_reference = @Reference
+            RETURNING appointment_id;
+            """;
+
+        return ApplyTransactionUpdateCoreAsync(updatePayment, new
+        {
+            Status = status,
+            TransactionId = transactionId,
+            PaidAt = paidAt,
+            Reference = reference
+        }, markAppointmentPaid);
+    }
+
+    // Ejecuta el UPDATE del pago y, si corresponde, marca la cita como pagada, en una transacción.
+    private Task<int?> ApplyTransactionUpdateCoreAsync(string updatePayment, object parameters, bool markAppointmentPaid)
+    {
         const string markPaid = "UPDATE appointments SET payment_status = 'PAID' WHERE id = @AppointmentId;";
 
         return ExecuteSafeAsync<int?>(async conn =>
         {
             using var tx = conn.BeginTransaction();
 
-            var appointmentId = await conn.ExecuteScalarAsync<int?>(updatePayment, new
-            {
-                Status = status,
-                TransactionId = transactionId,
-                Reference = reference,
-                PaidAt = paidAt,
-                PaymentLinkId = paymentLinkId
-            }, tx);
+            var appointmentId = await conn.ExecuteScalarAsync<int?>(updatePayment, parameters, tx);
 
             if (appointmentId is null)
             {

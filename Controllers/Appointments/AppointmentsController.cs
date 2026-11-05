@@ -158,6 +158,14 @@ public class AppointmentsController(
         return CreatedResponse(result, "Enlace de pago generado satisfactoriamente");
     }
 
+    [HttpPost("{id:int}/checkout-config", Name = "GenerateAppointmentCheckoutConfig")]
+    [EnableRateLimiting("UserPolicy")]
+    public async Task<IActionResult> GenerateCheckoutConfig([FromRoute] int id)
+    {
+        var result = await appointmentPaymentService.GenerateCheckoutConfigAsync(id);
+        return CreatedResponse(result, "Configuración de checkout generada satisfactoriamente");
+    }
+
     [HttpGet("{id:int}/pricing", Name = "GetAppointmentPricing")]
     [EnableRateLimiting("UserPolicy")]
     public async Task<IActionResult> GetPricing([FromRoute] int id)

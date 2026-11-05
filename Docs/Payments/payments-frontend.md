@@ -273,3 +273,124 @@ Estado de pago de la cita + el último enlace/transacción generado.
   `amountInCents` es ese valor ×100.
 - El enlace vence según `expiresAt`; si venció, genera uno nuevo con `POST .../payment-link`.
 - Un enlace es de **un solo uso** (acepta una sola transacción aprobada).
+
+---
+
+## 9. Widget / Checkout Web embebido (uso de la llave pública)
+
+Hay **dos formas** de cobrar, y usan la llave pública de forma distinta:
+
+- **Flujo de enlaces (§3–§6):** el frontend **no usa ninguna llave**. Solo abre el
+  `checkoutUrl` que devuelve el backend. Es el más simple y el recomendado por defecto.
+- **Flujo embebido (esta sección):** el pago se renderiza **dentro de tu propia página**
+  con el Widget o el Checkout Web de Wompi. Aquí **sí** se usa la llave pública en el
+  cliente. **Ya está soportado por el backend** vía `POST .../checkout-config` (§9.2).
+
+> Los **cuatro** secretos de Wompi y dónde vive cada uno (no confundirlos):
+> | Secreto | Dónde vive | Para qué |
+> |---|---|---|
+> | **Llave privada** (`prv_...`) | Solo backend | Crear enlaces de pago. **Nunca** al frontend. |
+> | **Events secret** (`test_events_...`) | Solo backend | Verificar la firma de los webhooks. **Nunca** al frontend. |
+> | **Integrity secret** (`test_integrity_...`) | Solo backend | Firmar el Widget/Checkout Web. **Nunca** al frontend. |
+> | **Llave pública** (`pub_...`) | **Frontend** (segura de exponer) | Identificar el comercio en el Widget/Checkout Web. |
+>
+> La llave pública **está diseñada para ir en el cliente** (como la publishable key de
+> Stripe). La firma de integridad la calcula **siempre el backend** con el integrity
+> secret; el frontend solo la reenvía.
+
+### 9.1 ¿Quién llama a este endpoint?
+
+Igual que el resto de §1–§8, `POST .../checkout-config` requiere **JWT** (es parte del
+panel admin/doctor autenticado). Es decir, hoy el flujo embebido asume que el Widget se
+renderiza en una pantalla autenticada. Si en el futuro quieres embeber el Widget en una
+página **pública del paciente** (sin login), hay que cambiar la autenticación de este
+endpoint; avísanos y lo ajustamos.
+
+### 9.2 Obtener la configuración del checkout
+
+#### `POST /api/appointments/{id}/checkout-config`
+Devuelve todo lo que el Widget/Checkout Web necesita para esa cita, con la **firma ya
+calculada**. Genera una **referencia única** por llamada (si recargas, pide una nueva).
+
+**Response `201`**
+```json
+{
+  "success": true,
+  "statusCode": 201,
+  "message": "Configuración de checkout generada satisfactoriamente",
+  "items": {
+    "appointmentId": 123,
+    "publicKey": "pub_test_l7AOLC4njSFxrDc9ij1D2CV4hFUWFMI3",
+    "currency": "COP",
+    "amountInCents": 82010000,
+    "reference": "CITA-123-9f2c8a1b4d7e4f0aa1b2c3d4e5f60718",
+    "signatureIntegrity": "a1b2c3…（64 hex en minúscula）",
+    "redirectUrl": "https://app.confirmamed.com/pago/resultado",
+    "amountUsd": 200.00,
+    "trm": 4100.50,
+    "amountCop": 820100
+  }
+}
+```
+
+| Campo | Uso |
+|-------|-----|
+| `publicKey` | `data-public-key` / `public-key`. |
+| `currency` | Siempre `COP`. |
+| `amountInCents` | Monto a cobrar (COP ×100). |
+| `reference` | Referencia única del pago; va tal cual al Widget. |
+| `signatureIntegrity` | `signature:integrity`. **No la recalcules en el frontend.** |
+| `redirectUrl` | A dónde vuelve el paciente tras pagar. |
+| `amountUsd` / `trm` / `amountCop` | Solo para mostrar en la UI. |
+
+**Errores**
+- `400` — *"La cita no tiene precio configurado…"* (ponle precio al combo primero, §2),
+  o Wompi sin configurar (falta la llave pública o el integrity secret en el backend).
+- `404` — la cita no existe.
+- `503` — no se pudo obtener la TRM, o la BD falló.
+
+### 9.3 Renderizar el pago con esos valores
+
+**Opción A — Widget (botón que abre un modal):**
+```html
+<form>
+  <script
+    src="https://checkout.wompi.co/widget.js"
+    data-render="button"
+    data-public-key="{publicKey}"
+    data-currency="{currency}"
+    data-amount-in-cents="{amountInCents}"
+    data-reference="{reference}"
+    data-signature:integrity="{signatureIntegrity}"
+    data-redirect-url="{redirectUrl}">
+  </script>
+</form>
+```
+
+**Opción B — Checkout Web (redirección por URL):**
+```
+https://checkout.wompi.co/p/?public-key={publicKey}
+  &currency={currency}
+  &amount-in-cents={amountInCents}
+  &reference={reference}
+  &signature:integrity={signatureIntegrity}
+  &redirect-url={redirectUrl}
+```
+
+> Todos los `{...}` salen tal cual de la respuesta de §9.2. El frontend **no** calcula
+> ni modifica `amountInCents`, `reference` ni `signatureIntegrity` (si cambias cualquiera
+> de esos tres, Wompi rechaza la transacción por firma inválida).
+
+### 9.4 Confirmación (igual que el flujo de enlaces)
+
+La confirmación sigue siendo **asíncrona por webhook**. El backend correlaciona la
+transacción por la `reference` (no por `payment_link_id`) y, al quedar `APPROVED`, marca
+la cita como `PAID`. Para reflejarlo en la UI, haz **polling** a `GET .../payment` (§5)
+igual que en el flujo de enlaces.
+
+### Recomendación
+
+Para pacientes del extranjero y por simplicidad, el **flujo de enlaces** (§3–§6) sigue
+siendo el camino más sencillo (cero llaves en el frontend). Usa el **flujo embebido**
+(§9) cuando quieras el formulario de pago dentro de la propia app; el backend ya entrega
+todo firmado, así que el frontend solo pinta el Widget con los valores de §9.2.

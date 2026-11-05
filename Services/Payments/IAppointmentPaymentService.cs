@@ -7,6 +7,10 @@ public interface IAppointmentPaymentService
     // Genera (o regenera) el enlace de pago Wompi de una cita y, opcionalmente, lo envía por email.
     Task<PaymentLinkResultDto> GeneratePaymentLinkAsync(int appointmentId, bool sendEmail, CancellationToken ct = default);
 
+    // Genera la configuración (llave pública, referencia, monto y firma) para que el
+    // frontend renderice el Widget / Checkout Web embebido de Wompi.
+    Task<CheckoutConfigResultDto> GenerateCheckoutConfigAsync(int appointmentId, CancellationToken ct = default);
+
     // "Valores de la cita": precio en USD + conversión a COP con la TRM vigente.
     Task<AppointmentPricingResponseDto> GetPricingAsync(int appointmentId, CancellationToken ct = default);
 

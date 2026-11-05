@@ -63,6 +63,18 @@ public class WompiService(HttpClient http, IOptions<WompiSettings> options, ILog
         return $"{baseUrl}{paymentLinkId}";
     }
 
+    public string BuildIntegritySignature(string reference, long amountInCents, string currency)
+    {
+        if (string.IsNullOrWhiteSpace(_settings.IntegritySecret))
+            throw new BadRequestException("Wompi no está configurado para el widget (falta el secreto de integridad)");
+
+        // OJO: Wompi exige la firma de integridad en hex MINÚSCULA
+        // (distinto del checksum del webhook, que va en mayúscula).
+        var toSign = $"{reference}{amountInCents}{currency}{_settings.IntegritySecret}";
+        var bytes = SHA256.HashData(Encoding.UTF8.GetBytes(toSign));
+        return Convert.ToHexString(bytes).ToLowerInvariant();
+    }
+
     public bool VerifyEventSignature(string rawBody, string? checksumHeader)
     {
         if (string.IsNullOrWhiteSpace(_settings.EventsSecret))

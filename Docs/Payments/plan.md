@@ -154,6 +154,7 @@ expires_at, paid_at, created_at, updated_at
 | `PUT` | `/api/DoctorsHasSpecialities/price` | Fijar precio USD de un combo doctor+especialidad. |
 | `GET` | `/api/DoctorsHasSpecialities/prices` | Listar precios (filtros `doctorId`, `specialityId`). |
 | `POST` | `/api/appointments/{id}/payment-link` | Generar enlace (`{ sendEmail }`). |
+| `POST` | `/api/appointments/{id}/checkout-config` | Config del Widget/Checkout Web embebido (llave pública + referencia + firma). |
 | `GET` | `/api/appointments/{id}/pricing` | Valores USD + COP (TRM). |
 | `GET` | `/api/appointments/{id}/payment` | Estado de pago. |
 | `POST` | `/api/webhooks/wompi` | Webhook de Wompi (interno, anónimo). |
@@ -171,8 +172,16 @@ Detalle de request/response: [`payments-frontend.md`](./payments-frontend.md).
 
 ---
 
-## 8. Estado actual / pendientes (al 2026-11-02)
+## 8. Estado actual / pendientes (al 2026-11-04)
 
 - Código completo y **compila** (net10.0). Sin probar end-to-end (requiere BD + llaves).
-- **SQL sin aplicar**: el proyecto Neon `ConfirmaMed` estuvo sobre cuota; aplicar `001_wompi_payments.sql` al branch `develop`.
-- Faltan las llaves de Wompi y la configuración de la URL de eventos en el dashboard.
+- **Dos flujos disponibles:** enlaces de pago (`payment-link`) y Widget/Checkout Web
+  embebido (`checkout-config`). El Widget firma con el **integrity secret** en backend y
+  el webhook correlaciona por `payment_link_id` **o** por `reference`.
+- Llaves de **sandbox** ya cargadas en `appsettings.Development.json` (pública, privada,
+  events secret e integrity secret).
+- **SQL sin aplicar**: el proyecto Neon `ConfirmaMed` estuvo sobre cuota; aplicar
+  `001_wompi_payments.sql` y `002_wompi_widget_checkout.sql` al branch `develop`.
+- Falta configurar la URL de eventos en el dashboard de Wompi (sandbox).
+- El endpoint `checkout-config` hoy requiere JWT (panel admin/doctor); si el Widget se
+  embebe en una pantalla pública del paciente, revisar su autenticación.

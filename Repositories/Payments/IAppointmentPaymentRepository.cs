@@ -14,13 +14,23 @@ public interface IAppointmentPaymentRepository
     // Precio vigente de la cita (price_usd de la cita, o del combo doctor+especialidad) + estado.
     Task<AppointmentPaymentInfoDto?> GetAppointmentPaymentInfoAsync(int appointmentId);
 
-    // Aplica el resultado de una transacción al pago y, si fue aprobada, marca la cita como pagada.
+    // Aplica el resultado de una transacción (correlacionada por payment_link_id) al pago
+    // y, si fue aprobada, marca la cita como pagada. Flujo de ENLACES de pago.
     // Devuelve el appointment_id afectado, o null si no existe el pago.
-    Task<int?> ApplyTransactionUpdateAsync(
+    Task<int?> ApplyTransactionUpdateByLinkIdAsync(
         string paymentLinkId,
         string status,
         string? transactionId,
         string? reference,
+        DateTime? paidAt,
+        bool markAppointmentPaid);
+
+    // Igual, pero correlacionando por la referencia del pago. Flujo del WIDGET / Checkout Web
+    // embebido (la transacción no trae payment_link_id, solo la reference que generó el backend).
+    Task<int?> ApplyTransactionUpdateByReferenceAsync(
+        string reference,
+        string status,
+        string? transactionId,
         DateTime? paidAt,
         bool markAppointmentPaid);
 }

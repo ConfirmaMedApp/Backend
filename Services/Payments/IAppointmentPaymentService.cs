@@ -17,6 +17,11 @@ public interface IAppointmentPaymentService
     // Estado de pago de la cita + último enlace generado.
     Task<AppointmentPaymentStatusResponseDto> GetPaymentStatusAsync(int appointmentId);
 
+    // Reconsulta en Wompi el estado de la transacción y actualiza el pago de la cita
+    // (fallback/polling cuando el webhook no llega). `transactionId` es el que Wompi
+    // devuelve en el redirect (?id=); si es null se usa el ya almacenado, si lo hay.
+    Task<AppointmentPaymentStatusResponseDto> RefreshPaymentStatusAsync(int appointmentId, string? transactionId = null, CancellationToken ct = default);
+
     // Procesa un webhook de Wompi (verifica firma incluida). Devuelve true si se recibió y procesó.
     Task<bool> HandleWebhookAsync(string rawBody, string? checksumHeader);
 }

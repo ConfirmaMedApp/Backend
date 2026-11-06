@@ -54,6 +54,27 @@ public class WompiService(HttpClient http, IOptions<WompiSettings> options, ILog
         return result.Data;
     }
 
+    public async Task<WompiTransaction?> GetTransactionAsync(string transactionId, CancellationToken ct = default)
+    {
+        if (string.IsNullOrWhiteSpace(transactionId))
+            return null;
+
+        if (string.IsNullOrWhiteSpace(_settings.PrivateKey))
+            throw new BadRequestException("Wompi no está configurado (falta la llave privada)");
+
+        var response = await http.GetAsync($"transactions/{Uri.EscapeDataString(transactionId)}", ct);
+
+        if (!response.IsSuccessStatusCode)
+        {
+            var body = await response.Content.ReadAsStringAsync(ct);
+            logger.LogWarning("Wompi GetTransaction {Id} falló ({Status}): {Body}", transactionId, response.StatusCode, body);
+            return null;
+        }
+
+        var result = await response.Content.ReadFromJsonAsync<WompiTransactionResponseDto>(cancellationToken: ct);
+        return result?.Data;
+    }
+
     public string BuildCheckoutUrl(string paymentLinkId)
     {
         var baseUrl = _settings.CheckoutBaseUrl.EndsWith('/')

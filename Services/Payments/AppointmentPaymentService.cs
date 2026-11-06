@@ -199,6 +199,66 @@ public class AppointmentPaymentService(
         };
     }
 
+    public async Task<AppointmentPaymentStatusResponseDto> RefreshPaymentStatusAsync(
+        int appointmentId, string? transactionId = null, CancellationToken ct = default)
+    {
+        // La cita debe existir (lanza 404 si no).
+        _ = await paymentRepository.GetAppointmentPaymentInfoAsync(appointmentId)
+            ?? throw new NotFoundException("Cita no encontrada");
+
+        var payment = await paymentRepository.GetLatestByAppointmentIdAsync(appointmentId);
+
+        // Sin pago aún, o ya en estado final: devolvemos el estado tal cual (no reconsultamos).
+        if (payment is null || !IsPending(payment.Status))
+            return await GetPaymentStatusAsync(appointmentId);
+
+        // Id de transacción a consultar: el del redirect (preferido) o el ya almacenado.
+        var txId = !string.IsNullOrWhiteSpace(transactionId) ? transactionId! : payment.WompiTransactionId;
+
+        // Flujo widget sin webhook todavía y sin id del redirect: no hay forma de consultar.
+        if (string.IsNullOrWhiteSpace(txId))
+            return await GetPaymentStatusAsync(appointmentId);
+
+        var tx = await wompiService.GetTransactionAsync(txId, ct);
+        if (tx is null)
+            return await GetPaymentStatusAsync(appointmentId);
+
+        // La transacción debe corresponder a ESTE pago (por referencia o por enlace), para que
+        // nadie marque como pagada una cita ajena pasando un id de transacción cualquiera.
+        var belongsByReference = !string.IsNullOrWhiteSpace(payment.WompiReference)
+            && string.Equals(payment.WompiReference, tx.Reference, StringComparison.Ordinal);
+        var belongsByLink = !string.IsNullOrWhiteSpace(payment.WompiPaymentLinkId)
+            && string.Equals(payment.WompiPaymentLinkId, tx.PaymentLinkId, StringComparison.Ordinal);
+
+        if (!belongsByReference && !belongsByLink)
+        {
+            logger.LogWarning(
+                "Refresh pago cita {AppointmentId}: la transacción {TxId} no corresponde al pago (ref/enlace no coincide)",
+                appointmentId, txId);
+            return await GetPaymentStatusAsync(appointmentId);
+        }
+
+        var status = string.IsNullOrWhiteSpace(tx.Status) ? "UNKNOWN" : tx.Status.ToUpperInvariant();
+        var approved = status == "APPROVED";
+        DateTime? paidAt = approved ? DateTime.UtcNow : null;
+
+        if (!string.IsNullOrWhiteSpace(payment.WompiPaymentLinkId))
+            await paymentRepository.ApplyTransactionUpdateByLinkIdAsync(
+                payment.WompiPaymentLinkId, status, tx.Id, tx.Reference, paidAt, markAppointmentPaid: approved);
+        else
+            await paymentRepository.ApplyTransactionUpdateByReferenceAsync(
+                payment.WompiReference!, status, tx.Id, paidAt, markAppointmentPaid: approved);
+
+        logger.LogInformation("Refresh pago cita {AppointmentId}: {Status} (tx {TxId})", appointmentId, status, tx.Id);
+
+        return await GetPaymentStatusAsync(appointmentId);
+    }
+
+    // Un pago es "pendiente" (reconsultable) si no tiene estado o sigue en PENDING.
+    private static bool IsPending(string? status) =>
+        string.IsNullOrWhiteSpace(status)
+        || status.Equals("PENDING", StringComparison.OrdinalIgnoreCase);
+
     public async Task<bool> HandleWebhookAsync(string rawBody, string? checksumHeader)
     {
         if (!wompiService.VerifyEventSignature(rawBody, checksumHeader))

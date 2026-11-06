@@ -21,4 +21,9 @@ public interface IWompiService
 
     // Verifica la firma de un webhook de Wompi (header X-Event-Checksum / signature.checksum).
     bool VerifyEventSignature(string rawBody, string? checksumHeader);
+
+    // Consulta una transacción por su id en Wompi (GET transactions/{id}). Se usa para
+    // reconciliar el estado del pago cuando el webhook no llega (polling). Devuelve null
+    // si no existe o si Wompi responde con error.
+    Task<WompiTransaction?> GetTransactionAsync(string transactionId, CancellationToken ct = default);
 }

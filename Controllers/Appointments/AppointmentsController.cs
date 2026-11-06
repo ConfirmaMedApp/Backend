@@ -181,4 +181,15 @@ public class AppointmentsController(
         var result = await appointmentPaymentService.GetPaymentStatusAsync(id);
         return OkResponse(result);
     }
+
+    // Reconsulta el estado del pago en Wompi (fallback/polling cuando el webhook no llega).
+    // El frontend lo llama tras el redirect de Wompi pasando ?transactionId=<id del ?id=>.
+    [HttpPost("{id:int}/payment/refresh", Name = "RefreshAppointmentPaymentStatus")]
+    [EnableRateLimiting("UserPolicy")]
+    public async Task<IActionResult> RefreshPaymentStatus(
+        [FromRoute] int id, [FromQuery] string? transactionId, CancellationToken ct)
+    {
+        var result = await appointmentPaymentService.RefreshPaymentStatusAsync(id, transactionId, ct);
+        return OkResponse(result);
+    }
 }

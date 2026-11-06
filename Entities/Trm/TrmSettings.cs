@@ -8,6 +8,7 @@ public class TrmSettings
     // Cuántas horas cachear la TRM antes de volver a consultarla.
     public int CacheHours { get; set; } = 12;
 
-    // Tasa de respaldo si la API no responde (0 = sin respaldo => error).
-    public decimal FallbackRate { get; set; } = 0m;
+    // Tasa de respaldo (COP por USD) si la API de la TRM no responde o no trae
+    // un valor usable. 0 = sin respaldo => error. Por defecto 4000 COP/USD.
+    public decimal FallbackRate { get; set; } = 4000m;
 }

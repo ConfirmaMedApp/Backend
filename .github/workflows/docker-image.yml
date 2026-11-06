@@ -1,8 +1,11 @@
 name: Build & Deploy to Cloud Run (Artifact Registry)
 
+# Auto-deploy a Cloud Run DESACTIVADO: el deploy por push lo hace Railway.
+# Este workflow queda solo manual (Actions -> Run workflow) por si se necesita
+# publicar a Cloud Run puntualmente. Para reactivar el auto-deploy, volver a
+# agregar el trigger `push` sobre la rama main.
 on:
-  push:
-    branches: ["main"]
+  workflow_dispatch:
 
 jobs:
   build-and-deploy:

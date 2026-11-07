@@ -16,8 +16,9 @@ public interface IAppointmentPaymentRepository
 
     // Aplica el resultado de una transacción (correlacionada por payment_link_id) al pago
     // y, si fue aprobada, marca la cita como pagada. Flujo de ENLACES de pago.
-    // Devuelve el appointment_id afectado, o null si no existe el pago.
-    Task<int?> ApplyTransactionUpdateByLinkIdAsync(
+    // Devuelve el appointment_id afectado (null si no existe el pago) y si la cita
+    // ACABA de pasar a pagada en esta llamada (NewlyPaid; false en reintentos del webhook).
+    Task<(int? AppointmentId, bool NewlyPaid)> ApplyTransactionUpdateByLinkIdAsync(
         string paymentLinkId,
         string status,
         string? transactionId,
@@ -27,7 +28,7 @@ public interface IAppointmentPaymentRepository
 
     // Igual, pero correlacionando por la referencia del pago. Flujo del WIDGET / Checkout Web
     // embebido (la transacción no trae payment_link_id, solo la reference que generó el backend).
-    Task<int?> ApplyTransactionUpdateByReferenceAsync(
+    Task<(int? AppointmentId, bool NewlyPaid)> ApplyTransactionUpdateByReferenceAsync(
         string reference,
         string status,
         string? transactionId,

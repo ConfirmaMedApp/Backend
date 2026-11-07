@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="es" xmlns="http://www.w3.org/1999/xhtml" xmlns:o="urn:schemas-microsoft-com:office:office">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="x-apple-disable-message-reformatting">
+    <title>Cita cancelada</title>
+    <style>
+        body { margin: 0; padding: 0; width: 100% !important; -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%; }
+        img { border: 0; outline: none; text-decoration: none; }
+
+        @media only screen and (max-width: 600px) {
+            .email-container { width: 100% !important; margin: 0 !important; }
+            .content-padding { padding: 20px 22px !important; }
+            .header-pad { padding: 32px 24px 44px !important; }
+        }
+    </style>
+</head>
+<body style="margin: 0; padding: 0; background-color: #eef1f4; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; color: #16202e;">
+
+<table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #eef1f4;">
+    <tr>
+        <td align="center" style="padding: 40px 10px;">
+
+            <table class="email-container" role="presentation" border="0" cellpadding="0" cellspacing="0" width="600" style="background-color: #ffffff; border-radius: 14px; overflow: hidden; box-shadow: 0 4px 18px rgba(20,30,50,0.06);">
+
+                <!-- Header -->
+                <tr>
+                    <td class="header-pad" align="center" style="padding: 38px 40px 46px; background-color: #b45309; background-image: linear-gradient(135deg, #d97706 0%, #b91c1c 100%);">
+                        <div style="font-size: 22px; font-weight: 800; letter-spacing: 0.16em; color: #ffffff;">CONFIRMA<span style="color: #ffe4c7;">MED</span></div>
+                        <h1 style="margin: 22px 0 0; font-size: 26px; font-weight: 800; color: #ffffff; line-height: 1.25;">Hola, {{ToName}}</h1>
+                        <p style="margin: 8px 0 0; font-size: 15px; color: #ffeede;">Tu cita fue cancelada por falta de pago</p>
+                    </td>
+                </tr>
+
+                <!-- Detalles de la cita cancelada -->
+                <tr>
+                    <td style="padding: 0 24px;">
+                        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top: -26px; background-color: #ffffff; border: 1px solid #e9edf3; border-radius: 12px; box-shadow: 0 8px 24px rgba(20,30,50,0.08);">
+                            <tr>
+                                <td class="content-padding" style="padding: 24px 28px;">
+                                    <p style="margin: 0 0 6px; font-size: 13px; color: #6b7a90;">{{SpecialityName}}</p>
+                                    <p style="margin: 0 0 14px; font-size: 18px; font-weight: 700; color: #16202e;">{{DoctorName}}</p>
+                                    <p style="margin: 0; font-size: 15px; color: #2a3b4c; text-decoration: line-through;">&#128197; {{DateAppointment}} &nbsp;&bull;&nbsp; {{StartHour}} - {{EndHour}}</p>
+                                </td>
+                            </tr>
+                        </table>
+                    </td>
+                </tr>
+
+                <!-- Explicación -->
+                <tr>
+                    <td class="content-padding" style="padding: 26px 40px 0;">
+                        <p style="margin: 0; font-size: 16px; line-height: 1.65; color: #55617a;">
+                            No registramos el pago de tu cita antes de su inicio, así que la cancelamos automáticamente y liberamos el horario.
+                        </p>
+                        <p style="margin: 14px 0 0; font-size: 16px; line-height: 1.65; color: #55617a;">
+                            Si aún deseas atenderte, puedes <strong style="color: #16202e;">agendar una nueva cita</strong> y realizar el pago para confirmarla. Si ya habías pagado, responde a tu clínica para que revisemos tu caso.
+                        </p>
+                    </td>
+                </tr>
+
+                <!-- Footer -->
+                <tr>
+                    <td class="content-padding" style="padding: 26px 40px 40px; text-align: center;">
+                        <div style="border-top: 1px solid #eef1f5; padding-top: 18px;">
+                            <p style="margin: 0; font-size: 12px; color: #a4b0c0;">{{OfficeName}} &bull; {{OfficeAddress}}</p>
+                            <p style="margin: 10px 0 0; font-size: 11px; color: #aab2c0;">Mensaje automático, por favor no respondas a este correo.</p>
+                        </div>
+                    </td>
+                </tr>
+
+            </table>
+
+            <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">
+                <tr>
+                    <td align="center" style="padding-top: 20px; color: #99a2b0; font-size: 12px;">
+                        <p style="margin: 0;">&copy; {{OfficeName}}. Todos los derechos reservados.</p>
+                    </td>
+                </tr>
+            </table>
+
+        </td>
+    </tr>
+</table>
+
+</body>
+</html>

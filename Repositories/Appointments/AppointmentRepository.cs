@@ -218,6 +218,15 @@ public class AppointmentRepository(IDbConnectionFactory dbConnectionFactory) : R
             dbConnectionFactory);
     }
 
+    public Task<IEnumerable<int>> CancelUnpaidAppointmentsAsync(int minutesBefore)
+    {
+        const string query = "SELECT * FROM cancel_unpaid_appointments(@Minutes);";
+
+        return ExecuteSafeAsync(async conn =>
+                await conn.QueryAsync<int>(query, new { Minutes = minutesBefore }),
+            dbConnectionFactory);
+    }
+
     public Task<IEnumerable<int>> GetAppointmentsForRemindersAsync(int hoursAhead)
     {
         // Solo citas 'asignada' y futuras. La hora se compara en zona de Bogotá

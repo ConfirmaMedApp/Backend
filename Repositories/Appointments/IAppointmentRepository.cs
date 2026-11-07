@@ -30,6 +30,12 @@ public interface IAppointmentRepository
     Task<IEnumerable<AppointmentFlatDto>> GetRecommendationsForPatientAsync(int specialityId, string dateSelected);
     
     Task<IEnumerable<(int AppointmentId, string ToState)>> ProcessTransitionsAsync();
+
+    // Cancela (estado del sistema, motivo 'impago') las citas 'asignada' sin pagar
+    // a las que les faltan `minutesBefore` minutos o menos para iniciar.
+    // Devuelve los ids de las citas canceladas.
+    Task<IEnumerable<int>> CancelUnpaidAppointmentsAsync(int minutesBefore);
+
     Task<IEnumerable<int>> GetAppointmentsForRemindersAsync(int hoursAhead);
     Task MarkReminderAsSentAsync(int appointmentId, int hourWindow);
     

@@ -74,7 +74,7 @@ public class AppointmentPaymentRepository(IDbConnectionFactory dbConnectionFacto
             dbConnectionFactory);
     }
 
-    public Task<int?> ApplyTransactionUpdateByLinkIdAsync(
+    public Task<(int? AppointmentId, bool NewlyPaid)> ApplyTransactionUpdateByLinkIdAsync(
         string paymentLinkId,
         string status,
         string? transactionId,
@@ -103,7 +103,7 @@ public class AppointmentPaymentRepository(IDbConnectionFactory dbConnectionFacto
         }, markAppointmentPaid);
     }
 
-    public Task<int?> ApplyTransactionUpdateByReferenceAsync(
+    public Task<(int? AppointmentId, bool NewlyPaid)> ApplyTransactionUpdateByReferenceAsync(
         string reference,
         string status,
         string? transactionId,
@@ -130,11 +130,19 @@ public class AppointmentPaymentRepository(IDbConnectionFactory dbConnectionFacto
     }
 
     // Ejecuta el UPDATE del pago y, si corresponde, marca la cita como pagada, en una transacción.
-    private Task<int?> ApplyTransactionUpdateCoreAsync(string updatePayment, object parameters, bool markAppointmentPaid)
+    // El marcado es idempotente (solo aplica si no estaba ya 'PAID') y reporta NewlyPaid=true
+    // únicamente cuando la cita ACABA de pasar a pagada, para no disparar efectos repetidos
+    // (provisión de video, correo) ante reintentos del webhook de Wompi.
+    private Task<(int? AppointmentId, bool NewlyPaid)> ApplyTransactionUpdateCoreAsync(
+        string updatePayment, object parameters, bool markAppointmentPaid)
     {
-        const string markPaid = "UPDATE appointments SET payment_status = 'PAID' WHERE id = @AppointmentId;";
+        const string markPaid = """
+            UPDATE appointments
+            SET payment_status = 'PAID'
+            WHERE id = @AppointmentId AND payment_status <> 'PAID';
+            """;
 
-        return ExecuteSafeAsync<int?>(async conn =>
+        return ExecuteSafeAsync<(int?, bool)>(async conn =>
         {
             using var tx = conn.BeginTransaction();
 
@@ -143,14 +151,18 @@ public class AppointmentPaymentRepository(IDbConnectionFactory dbConnectionFacto
             if (appointmentId is null)
             {
                 tx.Rollback();
-                return null;
+                return (null, false);
             }
 
+            var newlyPaid = false;
             if (markAppointmentPaid)
-                await conn.ExecuteAsync(markPaid, new { AppointmentId = appointmentId.Value }, tx);
+            {
+                var affected = await conn.ExecuteAsync(markPaid, new { AppointmentId = appointmentId.Value }, tx);
+                newlyPaid = affected > 0;
+            }
 
             tx.Commit();
-            return appointmentId;
+            return (appointmentId, newlyPaid);
         }, dbConnectionFactory);
     }
 

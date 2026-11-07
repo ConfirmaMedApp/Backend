@@ -14,6 +14,10 @@ public interface IAppointmentPaymentService
     // "Valores de la cita": precio en USD + conversión a COP con la TRM vigente.
     Task<AppointmentPricingResponseDto> GetPricingAsync(int appointmentId, CancellationToken ct = default);
 
+    // Precio vigente (USD) de la cita SIN convertir a COP (no consulta la TRM).
+    // Sirve para decidir si la cita requiere pago (y por tanto bloquear el video).
+    Task<decimal?> GetAppointmentPriceUsdAsync(int appointmentId);
+
     // Estado de pago de la cita + último enlace generado.
     Task<AppointmentPaymentStatusResponseDto> GetPaymentStatusAsync(int appointmentId);
 

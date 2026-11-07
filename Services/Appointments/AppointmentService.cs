@@ -5,6 +5,8 @@ using Backend.DTOs.Appointments.Responses;
 using Backend.DTOs.Emails;
 using Backend.DTOs.Offices.Responses;
 using Backend.DTOs.Patients.Responses;
+using Backend.DTOs.Payments.Responses;
+using Backend.Services.Payments;
 using Backend.Exceptions.BadRequest;
 using Backend.Exceptions.Conflict;
 using Backend.Exceptions.NotFound;
@@ -30,6 +32,7 @@ public class AppointmentService(
     IUserService userService,
     IBirdEmailService birdEmailService,
     IAppointmentVideoCallService videoCallService,
+    IAppointmentPaymentService appointmentPaymentService,
     ILogger<AppointmentService> logger,
     IValidator<SeveralAppointmentsRequestCreateDto> createValidatorDto,
     IValidator<RescheduleToSlotRequestDto> rescheduleToSlotValidatorDto,
@@ -58,21 +61,59 @@ public class AppointmentService(
         string? videoCallLink = null;
         if (patientInfo != null)
         {
+            // Regla de pago: si la cita tiene precio, se BLOQUEA el video. Generamos el enlace
+            // de pago y lo incluimos en el MISMO correo de asignación (sendEmail: false, sin
+            // correo aparte); el enlace de la videollamada NO se envía ni se provisiona hasta
+            // que el pago se confirme (ver AppointmentPaymentService.OnPaymentApprovedAsync).
+            // Si la cita es gratuita (sin precio), se mantiene el flujo anterior: se provisiona
+            // el video y su enlace va en el correo de confirmación.
+            PaymentLinkResultDto? payment = null;
+            var requiresPayment = false;
             try
             {
-                var provision = await videoCallService.ProvisionForAsync(
-                    dto.AppointmentId,
-                    $"{patientInfo.Name} {patientInfo.Lastname}");
-                videoCallLink = provision.PatientLink;
+                var priceUsd = await appointmentPaymentService.GetAppointmentPriceUsdAsync(dto.AppointmentId);
+                requiresPayment = priceUsd is > 0;
             }
             catch (Exception ex)
             {
-                logger.LogError(ex,
-                    "No se pudo provisionar la videollamada para la cita {AppointmentId}; se enviará el correo sin link",
+                logger.LogWarning(ex,
+                    "No se pudo determinar el precio de la cita {AppointmentId}; se tratará como gratuita",
                     dto.AppointmentId);
             }
 
-            await SendConfirmationEmailAsync(patientInfo, officeInfo, appointmentInfo, videoCallLink);
+            if (requiresPayment)
+            {
+                try
+                {
+                    payment = await appointmentPaymentService.GeneratePaymentLinkAsync(dto.AppointmentId, sendEmail: false);
+                }
+                catch (Exception ex)
+                {
+                    // Cita de pago pero el enlace falló (p. ej. Wompi caído): se mantiene el
+                    // bloqueo del video; el admin puede regenerar el enlace con POST /payment-link.
+                    logger.LogWarning(ex,
+                        "No se pudo generar el enlace de pago de la cita {AppointmentId}; el correo irá sin botón de pago y el video queda bloqueado hasta pagar",
+                        dto.AppointmentId);
+                }
+            }
+            else
+            {
+                try
+                {
+                    var provision = await videoCallService.ProvisionForAsync(
+                        dto.AppointmentId,
+                        $"{patientInfo.Name} {patientInfo.Lastname}");
+                    videoCallLink = provision.PatientLink;
+                }
+                catch (Exception ex)
+                {
+                    logger.LogError(ex,
+                        "No se pudo provisionar la videollamada para la cita {AppointmentId}; se enviará el correo sin link",
+                        dto.AppointmentId);
+                }
+            }
+
+            await SendConfirmationEmailAsync(patientInfo, officeInfo, appointmentInfo, videoCallLink, payment);
         }
 
         // Re-fetch para que la respuesta traiga room_name/url/created_at ya persistidas por la provisión
@@ -148,6 +189,50 @@ public class AppointmentService(
                 {
                     logger.LogError(ex, "No se pudo deprovisionar la videollamada al finalizar la cita {AppointmentId}", appointmentId);
                 }
+            }
+        }
+    }
+
+    public async Task ProcessUnpaidCancellationsAsync(int minutesBefore)
+    {
+        var ids = await appointmentRepository.CancelUnpaidAppointmentsAsync(minutesBefore);
+
+        foreach (var id in ids)
+        {
+            try
+            {
+                // Si por alguna razón había sala de video provisionada, la liberamos
+                // (en el flujo con pago el video no se provisiona hasta pagar, así que
+                // normalmente no habrá nada que liberar).
+                try
+                {
+                    await videoCallService.DeprovisionAsync(id);
+                }
+                catch (Exception ex)
+                {
+                    logger.LogError(ex,
+                        "No se pudo deprovisionar la videollamada de la cita {AppointmentId} cancelada por impago", id);
+                }
+
+                var appointment = await GetByIdAsync(id);
+                if (appointment.Patient is null)
+                    continue;
+
+                var patientInfo = await patientService.GetByIdAsync(appointment.Patient.Id);
+                if (patientInfo is null || string.IsNullOrWhiteSpace(patientInfo.Email))
+                    continue;
+
+                var userInfo = await userService.GetByIdAsync(appointment.UserId);
+                if (userInfo is null)
+                    continue;
+
+                var officeInfo = await officeService.GetByIdAsync(userInfo.Office.Id);
+
+                await SendCancellationEmailAsync(patientInfo, officeInfo, appointment);
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "No se pudo notificar la cancelación por impago de la cita {AppointmentId}", id);
             }
         }
     }
@@ -323,7 +408,7 @@ public class AppointmentService(
         return mapper.Map<IEnumerable<AppointmentResponseDto>>(appointments);
     }
 
-    public async Task SendConfirmationEmailAsync(PatientResponseDto patientResponseDto, OfficeResponseDto officeResponseDto, AppointmentResponseDto appointmentResponseDto, string? videoCallLink = null)
+    public async Task SendConfirmationEmailAsync(PatientResponseDto patientResponseDto, OfficeResponseDto officeResponseDto, AppointmentResponseDto appointmentResponseDto, string? videoCallLink = null, PaymentLinkResultDto? payment = null)
     {
         var templateDto = new AppointmentConfirmationEmailDto
         {
@@ -337,7 +422,10 @@ public class AppointmentService(
             DateAppointment = appointmentResponseDto.DateAppointment,
             StartHour = appointmentResponseDto.StartHour,
             EndHour = appointmentResponseDto.EndHour,
-            VideoCallLink = videoCallLink
+            VideoCallLink = videoCallLink,
+            CheckoutUrl = payment?.CheckoutUrl,
+            AmountUsd = payment is null ? null : payment.AmountUsd.ToString("N2", CultureInfo.InvariantCulture),
+            AmountCop = payment is null ? null : payment.AmountCop.ToString("N0", CultureInfo.InvariantCulture)
         };
 
         var htmlContent = AppointmentEmailTemplateHelper
@@ -375,6 +463,30 @@ public class AppointmentService(
             patientResponseDto.Email.Trim(),
             templateDto.ToName,
             "Recordatorio de cita médica",
+            htmlContent
+        );
+    }
+
+    public async Task SendCancellationEmailAsync(PatientResponseDto patientResponseDto, OfficeResponseDto officeResponseDto, AppointmentResponseDto appointmentResponseDto)
+    {
+        var templateDto = new AppointmentCancellationEmailDto
+        {
+            ToName = $"{patientResponseDto.Name} {patientResponseDto.Lastname}",
+            OfficeName = officeResponseDto.Name,
+            OfficeAddress = officeResponseDto.Address,
+            DoctorName = $"Dr. {appointmentResponseDto.Doctor.Name} {appointmentResponseDto.Doctor.LastName}".Trim(),
+            SpecialityName = appointmentResponseDto.Speciality.Name,
+            DateAppointment = appointmentResponseDto.DateAppointment,
+            StartHour = appointmentResponseDto.StartHour,
+            EndHour = appointmentResponseDto.EndHour
+        };
+
+        var htmlContent = AppointmentEmailTemplateHelper.BuildCancellationEmail(templateDto);
+
+        await birdEmailService.SendEmailAssignationAsync(
+            patientResponseDto.Email.Trim(),
+            templateDto.ToName,
+            "Tu cita fue cancelada por falta de pago",
             htmlContent
         );
     }

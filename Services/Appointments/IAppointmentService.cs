@@ -2,6 +2,7 @@
 using Backend.DTOs.Appointments.Responses;
 using Backend.DTOs.Offices.Responses;
 using Backend.DTOs.Patients.Responses;
+using Backend.DTOs.Payments.Responses;
 
 namespace Backend.Services.Appointments;
 
@@ -17,15 +18,19 @@ public interface IAppointmentService
     Task<AppointmentResponseDto> CancelAppointmentAsync(int appointmentId, string? note);
     Task<AppointmentResponseDto> MarkNoShowAsync(int appointmentId, string? note);
     Task ProcessAutomaticTransitionsAsync();
+    Task ProcessUnpaidCancellationsAsync(int minutesBefore);
     Task ProcessRemindersAsync(int hoursAhead);
     Task<AppointmentResponseDto> GetByIdAsync(int id);
     Task<IEnumerable<AppointmentHistoryResponseDto>> GetHistoryAsync(int appointmentId);
     Task<IEnumerable<AppointmentResponseDto>> GetByPatientNeedAppointmentAsync(int specialityId, string startHour, string dateSelected);
     Task<IEnumerable<AppointmentResponseDto>> GetRecommendationsForPatientAsync(int specialityId, string dateSelected);
-    Task SendConfirmationEmailAsync(PatientResponseDto patientResponseDto, OfficeResponseDto officeResponseDto, AppointmentResponseDto appointmentResponseDto, string? videoCallLink = null);
+    Task SendConfirmationEmailAsync(PatientResponseDto patientResponseDto, OfficeResponseDto officeResponseDto, AppointmentResponseDto appointmentResponseDto, string? videoCallLink = null, PaymentLinkResultDto? payment = null);
 
     Task SendReminderEmailAsync(PatientResponseDto patientResponseDto, OfficeResponseDto officeResponseDto,
         AppointmentResponseDto appointmentResponseDto, string? videoCallLink = null);
+
+    Task SendCancellationEmailAsync(PatientResponseDto patientResponseDto, OfficeResponseDto officeResponseDto,
+        AppointmentResponseDto appointmentResponseDto);
 
     Task<AppointmentVideoProvisionResultDto> ProvisionVideoCallAsync(int appointmentId);
     Task<DoctorMeetingTokenResultDto> IssueDoctorMeetingTokenAsync(int appointmentId);

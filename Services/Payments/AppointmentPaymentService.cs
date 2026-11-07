@@ -11,6 +11,7 @@ using Backend.Exceptions.NotFound;
 using Backend.Helpers;
 using Backend.Repositories.Appointments;
 using Backend.Repositories.Payments;
+using Backend.Services.Appointments.VideoCalls;
 using Backend.Services.Bird;
 using Backend.Services.Offices;
 using Backend.Services.Patients;
@@ -30,6 +31,7 @@ public class AppointmentPaymentService(
     IUserService userService,
     IOfficeService officeService,
     IBirdEmailService birdEmailService,
+    IAppointmentVideoCallService videoCallService,
     IOptions<WompiSettings> wompiOptions,
     ILogger<AppointmentPaymentService> logger) : IAppointmentPaymentService
 {
@@ -177,6 +179,12 @@ public class AppointmentPaymentService(
         };
     }
 
+    public async Task<decimal?> GetAppointmentPriceUsdAsync(int appointmentId)
+    {
+        var info = await paymentRepository.GetAppointmentPaymentInfoAsync(appointmentId);
+        return info?.PriceUsd;
+    }
+
     public async Task<AppointmentPaymentStatusResponseDto> GetPaymentStatusAsync(int appointmentId)
     {
         var info = await paymentRepository.GetAppointmentPaymentInfoAsync(appointmentId)
@@ -242,14 +250,20 @@ public class AppointmentPaymentService(
         var approved = status == "APPROVED";
         DateTime? paidAt = approved ? DateTime.UtcNow : null;
 
+        bool newlyPaid;
         if (!string.IsNullOrWhiteSpace(payment.WompiPaymentLinkId))
-            await paymentRepository.ApplyTransactionUpdateByLinkIdAsync(
+            (_, newlyPaid) = await paymentRepository.ApplyTransactionUpdateByLinkIdAsync(
                 payment.WompiPaymentLinkId, status, tx.Id, tx.Reference, paidAt, markAppointmentPaid: approved);
         else
-            await paymentRepository.ApplyTransactionUpdateByReferenceAsync(
+            (_, newlyPaid) = await paymentRepository.ApplyTransactionUpdateByReferenceAsync(
                 payment.WompiReference!, status, tx.Id, paidAt, markAppointmentPaid: approved);
 
         logger.LogInformation("Refresh pago cita {AppointmentId}: {Status} (tx {TxId})", appointmentId, status, tx.Id);
+
+        // Si el pago ACABA de confirmarse (p. ej. el webhook no llegó y el frontend hizo polling),
+        // provisionamos el video y enviamos el enlace al paciente, una sola vez.
+        if (newlyPaid)
+            await OnPaymentApprovedAsync(appointmentId, ct);
 
         return await GetPaymentStatusAsync(appointmentId);
     }
@@ -290,20 +304,21 @@ public class AppointmentPaymentService(
         DateTime? paidAt = approved ? DateTime.UtcNow : null;
 
         int? appointmentId;
+        bool newlyPaid;
         string correlation;
 
         if (!string.IsNullOrWhiteSpace(tx.PaymentLinkId))
         {
             // Flujo de ENLACES de pago.
             correlation = $"payment_link_id {tx.PaymentLinkId}";
-            appointmentId = await paymentRepository.ApplyTransactionUpdateByLinkIdAsync(
+            (appointmentId, newlyPaid) = await paymentRepository.ApplyTransactionUpdateByLinkIdAsync(
                 tx.PaymentLinkId, status, tx.Id, tx.Reference, paidAt, markAppointmentPaid: approved);
         }
         else if (!string.IsNullOrWhiteSpace(tx.Reference))
         {
             // Flujo del WIDGET / Checkout Web embebido (sin payment_link_id, con reference).
             correlation = $"reference {tx.Reference}";
-            appointmentId = await paymentRepository.ApplyTransactionUpdateByReferenceAsync(
+            (appointmentId, newlyPaid) = await paymentRepository.ApplyTransactionUpdateByReferenceAsync(
                 tx.Reference, status, tx.Id, paidAt, markAppointmentPaid: approved);
         }
         else
@@ -316,7 +331,90 @@ public class AppointmentPaymentService(
         else
             logger.LogInformation("Webhook Wompi: cita {AppointmentId} -> pago {Status}", appointmentId, status);
 
+        // Al confirmarse el pago (solo la primera vez): provisionar el video y enviar el
+        // enlace de la videollamada al paciente. newlyPaid es false en reintentos del webhook.
+        if (appointmentId is not null && newlyPaid)
+            await OnPaymentApprovedAsync(appointmentId.Value);
+
         return true;
+    }
+
+    // Se dispara UNA vez cuando el pago de la cita queda aprobado (webhook o polling):
+    // provisiona la videollamada (que estaba bloqueada hasta pagar) y envía al paciente
+    // un correo con el enlace de ingreso.
+    private async Task OnPaymentApprovedAsync(int appointmentId, CancellationToken ct = default)
+    {
+        try
+        {
+            var appointment = await appointmentRepository.GetByIdAsync(appointmentId);
+            if (appointment is null)
+                return;
+
+            string? videoLink = null;
+            if (appointment.PatientId is not null)
+            {
+                var patientDisplayName = $"{appointment.PatientName} {appointment.PatientLastname}".Trim();
+                try
+                {
+                    var provision = await videoCallService.ProvisionForAsync(appointmentId, patientDisplayName, ct);
+                    videoLink = provision.PatientLink;
+                }
+                catch (Exception ex)
+                {
+                    logger.LogError(ex,
+                        "No se pudo provisionar la videollamada tras el pago de la cita {AppointmentId}", appointmentId);
+                }
+            }
+
+            await TrySendPaidConfirmationEmailAsync(appointment, videoLink);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error en el post-procesado del pago aprobado de la cita {AppointmentId}", appointmentId);
+        }
+    }
+
+    // Correo "pago confirmado" con el enlace de la videollamada (reutiliza la plantilla de
+    // confirmación; al venir sin datos de pago, no se muestra el bloque de pago).
+    private async Task<bool> TrySendPaidConfirmationEmailAsync(AppointmentFlatDto appointment, string? videoCallLink)
+    {
+        try
+        {
+            if (appointment.PatientId is null)
+                return false;
+
+            var patient = await patientService.GetByIdAsync(appointment.PatientId.Value);
+            if (patient is null || string.IsNullOrWhiteSpace(patient.Email))
+                return false;
+
+            var user = await userService.GetByIdAsync(appointment.UserId);
+            var office = user is null ? null : await officeService.GetByIdAsync(user.Office.Id);
+
+            var dto = new AppointmentConfirmationEmailDto
+            {
+                ToName = $"{patient.Name} {patient.Lastname}".Trim(),
+                OfficeName = office?.Name ?? "ConfirmaMed",
+                OfficeNit = office?.Nit ?? string.Empty,
+                OfficeAddress = office?.Address ?? string.Empty,
+                OfficeBrandUrl = office?.Brand ?? string.Empty,
+                DoctorName = $"Dr. {appointment.DoctorName} {appointment.DoctorLastname}".Trim(),
+                SpecialityName = appointment.SpecialityName,
+                DateAppointment = appointment.DateAppointment,
+                StartHour = appointment.StartHour,
+                EndHour = appointment.EndHour,
+                VideoCallLink = videoCallLink
+            };
+
+            var html = AppointmentEmailTemplateHelper.BuildConfirmationEmail(dto);
+
+            return await birdEmailService.SendEmailAssignationAsync(
+                patient.Email.Trim(), dto.ToName, "Pago confirmado — acceso a tu cita", html);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "No se pudo enviar la confirmación de pago de la cita {Id}", appointment.Id);
+            return false;
+        }
     }
 
     private async Task<bool> TrySendPaymentEmailAsync(AppointmentFlatDto appointment, string checkoutUrl, decimal amountUsd, decimal amountCop)

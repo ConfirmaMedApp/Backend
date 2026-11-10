@@ -63,6 +63,8 @@ public class BackendProfile : Profile
                     Name = src.DocumentTypeName
                 }))
             .ForMember(dest => dest.Specialities, opt => opt.Ignore());
+        CreateMap<DoctorFlatDto, DoctorCardDto>()
+            .ForMember(dest => dest.Specialities, opt => opt.Ignore());
         CreateMap<Doctor, DoctorRequestCreateDto>().ReverseMap();
         CreateMap<Doctor, DoctorRequestUpdateDto>().ReverseMap();
 
@@ -90,6 +92,7 @@ public class BackendProfile : Profile
 
         CreateMap<Speciality, SpecialityResponseDto>().ReverseMap();
         CreateMap<Speciality, SpecialityMinimalDto>().ReverseMap();
+        CreateMap<SpecialityResponseDto, SpecialityMinimalDto>();
         CreateMap<Speciality, SpecialityRequestCreateDto>().ReverseMap();
         CreateMap<Speciality, SpecialityRequestUpdatedDto>().ReverseMap();
 

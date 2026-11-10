@@ -6,6 +6,7 @@ namespace Backend.Services.Doctors;
 public interface IDoctorService
 {
     Task<IEnumerable<DoctorResponseDto>> GetAllAsync(int? limit, int? offset, bool? status, string search = "");
+    Task<IEnumerable<DoctorCardDto>> GetAllCardsAsync();
     Task<DoctorResponseDto> GetByIdAsync(int id);
     Task<DoctorProfileResponseDto> GetProfileAsync(int id);
     Task<DoctorResponseDto> CreateAsync(DoctorRequestCreateDto dto);

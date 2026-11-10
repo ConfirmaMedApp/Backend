@@ -18,6 +18,15 @@ public class DoctorsController(IDoctorService doctorService) : BaseControllerCus
         return OkResponse(result);
     }
 
+    [AllowAnonymous]
+    [HttpGet("public/usage", Name = "GetAllDoctorsPublic")]
+    [EnableRateLimiting("ClientPolicy")]
+    public async Task<IActionResult> GetAllPublic()
+    {
+        var result = await doctorService.GetAllCardsAsync();
+        return OkResponse(result);
+    }
+
     [HttpGet("{id:int}", Name = "GetDoctorById")]
     [EnableRateLimiting("UserPolicy")]
     public async Task<IActionResult> GetById(int id)

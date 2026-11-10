@@ -1,6 +1,7 @@
 using AutoMapper;
 using Backend.DTOs.Doctors.Requests;
 using Backend.DTOs.Doctors.Responses;
+using Backend.DTOs.Specialities.Responses;
 using Backend.Entities.Doctors;
 using Backend.Exceptions.BadRequest;
 using Backend.Exceptions.NotFound;
@@ -36,6 +37,23 @@ public class DoctorService(
     {
         var doctors = await doctorRepository.GetAllAsync(limit, offset, status, search);
         return mapper.Map<IEnumerable<DoctorResponseDto>>(doctors);
+    }
+
+    public async Task<IEnumerable<DoctorCardDto>> GetAllCardsAsync()
+    {
+        // Solo doctores activos: este listado es público (selección de doctor en la app del paciente).
+        var doctors = await doctorRepository.GetAllAsync(limit: null, offset: null, status: true);
+
+        var cards = new List<DoctorCardDto>();
+        foreach (var doctor in doctors)
+        {
+            var card = mapper.Map<DoctorCardDto>(doctor);
+            var specialities = await doctorRepository.GetSpecialitiesByDoctorAsync(doctor.Id);
+            card.Specialities = mapper.Map<IEnumerable<SpecialityMinimalDto>>(specialities);
+            cards.Add(card);
+        }
+
+        return cards;
     }
 
     public async Task<DoctorResponseDto> GetByIdAsync(int id)

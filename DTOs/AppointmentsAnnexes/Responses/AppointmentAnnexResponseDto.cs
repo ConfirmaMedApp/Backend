@@ -8,5 +8,6 @@ public class AppointmentAnnexResponseDto
     public string File { get; set; } = string.Empty;
     public string Name { get; set; } = string.Empty;
     public int? PatientId { get; set; }
+    public int? UserId { get; set; }
     public AppointmentMinimalDto Appointment { get; set; } = new();
 }

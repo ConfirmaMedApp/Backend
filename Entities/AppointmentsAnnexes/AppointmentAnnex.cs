@@ -7,5 +7,6 @@ public class AppointmentAnnex
     public string Name { get; set; } = string.Empty;
     public int AppointmentId { get; set; }
     public int? PatientId { get; set; }
+    public int? UserId { get; set; }
     public TimeSpan CreatedAt { get; set; }
 }

@@ -6,10 +6,11 @@ using Backend.Entities.AppointmentsAnnexes;
 using Backend.Repositories.AppointmentsAnnexes;
 using Backend.Services.Appointments;
 using Backend.Services.CloudinaryUpload;
+using Backend.Services.CurrentUser;
 
 namespace Backend.Services.AppointmentsAnnexes;
 
-public class AppointmentAnnexService(IAppointmentAnnexRepository appointmentAnnexRepository, IAppointmentService appointmentService, ICloudinaryService cloudinaryService, IMapper mapper) : IAppointmentAnnexService
+public class AppointmentAnnexService(IAppointmentAnnexRepository appointmentAnnexRepository, IAppointmentService appointmentService, ICloudinaryService cloudinaryService, ICurrentUserService currentUserService, IMapper mapper) : IAppointmentAnnexService
 {
     public async Task<AppointmentResponseDto> CreateSeveralAsync(AppointmentAnnexRequestCreateDto[] dtos)
     {
@@ -21,6 +22,10 @@ public class AppointmentAnnexService(IAppointmentAnnexRepository appointmentAnne
         if (string.IsNullOrWhiteSpace(patientDocument))
             patientDocument = "sin-documento";
 
+        // Quién sube el anexo: el doctor/staff va autenticado (su user del JWT);
+        // el paciente lo sube desde el link de la teleconsulta sin token -> null.
+        var uploaderUserId = currentUserService.UserId;
+
         var folder = $"appointments/annexes/{patientDocument}/{appointmentId}";
 
         var tasks = dtos.Select(async dto =>
@@ -31,6 +36,7 @@ public class AppointmentAnnexService(IAppointmentAnnexRepository appointmentAnne
             appointmentAnnex.File = cloudinaryUrl;
             appointmentAnnex.Name = dto.File.FileName;
             appointmentAnnex.PatientId = patientId;
+            appointmentAnnex.UserId = uploaderUserId;
 
             return await appointmentAnnexRepository.CreateAsync(appointmentAnnex);
         });

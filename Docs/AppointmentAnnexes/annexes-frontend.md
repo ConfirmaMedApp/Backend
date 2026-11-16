@@ -2,11 +2,21 @@
 
 Los **anexos** son **documentos** (exámenes, órdenes, resultados…) que se adjuntan a
 una cita. Los puede subir el **doctor** desde el panel o el **paciente** desde la
-teleconsulta. Cada anexo se guarda en Cloudinary y queda asociado a la cita (y al
-paciente de esa cita).
+teleconsulta. Cada anexo se guarda en Cloudinary y queda asociado a la cita (al
+paciente de esa cita y a quién lo subió).
 
-> Migración de BD relacionada: [`01-patient-id.sql`](./01-patient-id.sql) (agrega
-> `patient_id` a los anexos). Aplicada en el branch `develop`.
+> Migraciones de BD relacionadas:
+> - [`01-patient-id.sql`](./01-patient-id.sql) — agrega `patient_id` (de quién es la cita).
+> - [`02-user-id.sql`](./02-user-id.sql) — agrega `user_id` (quién sube el anexo; `NULL` si lo sube el paciente).
+>
+> Aplicadas en el branch `develop`.
+
+> 🔑 **Quién sube el anexo (`user_id`):** el endpoint es público, pero **si la petición
+> lleva el JWT** (caso del **doctor** desde su panel) se guarda su `user_id`. Si **no**
+> lleva token (caso del **paciente** desde el link de la teleconsulta) queda en `NULL`.
+> El `user_id` se toma del token, **no** se recibe como campo del formulario (así no se
+> puede falsear en un endpoint anónimo). Para que quede registrado el doctor, el panel
+> debe mandar el header `Authorization: Bearer <token>` en este `POST`.
 
 ---
 
@@ -112,6 +122,7 @@ necesitas mostrar los anexos actualizados, llama al `GET` (§2).
       "file": "https://res.cloudinary.com/.../appointments/annexes/CC123/123/examen-sangre_ab12.pdf",
       "name": "examen-sangre.pdf",
       "patientId": 45,
+      "userId": 12,
       "appointment": {
         "id": 123,
         "dateAppointment": "2026-11-05",
@@ -127,6 +138,7 @@ necesitas mostrar los anexos actualizados, llama al `GET` (§2).
 | `file` | URL (segura) del documento en Cloudinary. Es el enlace para ver/descargar. |
 | `name` | Nombre original del archivo subido. |
 | `patientId` | Paciente de la cita (puede ser `null` si la cita aún no tenía paciente). |
+| `userId` | Usuario que subió el anexo. `null` si lo subió el **paciente** desde la teleconsulta; el `user_id` del **doctor** si lo subió desde el panel (con token). |
 | `appointment` | Datos mínimos de la cita (`id`, `dateAppointment`, `startHour`). |
 
 ---
@@ -146,8 +158,12 @@ necesitas mostrar los anexos actualizados, llama al `GET` (§2).
   usa `sin-documento`). El nombre se hace único (`UniqueFilename`), por eso el `file` trae un sufijo.
 - **`patient_id`:** al crear el anexo se guarda el `patient_id` de la cita (lo suba el doctor o el
   paciente). Columna nullable en `appointments_annexes`.
-- **Base de datos:** funciones `create_appointment_annex(file, name, appointment_id, patient_id)` y
-  `get_all_appointments_annexes(appointment_id)` (ver [`01-patient-id.sql`](./01-patient-id.sql)).
+- **`user_id`:** quién subió el anexo. Se toma de `ICurrentUserService` (el claim del JWT): el
+  doctor/staff autenticado guarda su `user_id`; el paciente anónimo queda en `NULL`. Columna nullable
+  en `appointments_annexes` (ver [`02-user-id.sql`](./02-user-id.sql)).
+- **Base de datos:** funciones `create_appointment_annex(file, name, appointment_id, patient_id, user_id)` y
+  `get_all_appointments_annexes(appointment_id)` (ver [`01-patient-id.sql`](./01-patient-id.sql) y
+  [`02-user-id.sql`](./02-user-id.sql)).
 - **Código:** [`Controllers/AppointmentsAnnexes/AppointmentAnnexesController.cs`](../../Controllers/AppointmentsAnnexes/AppointmentAnnexesController.cs),
   [`Services/AppointmentsAnnexes/AppointmentAnnexService.cs`](../../Services/AppointmentsAnnexes/AppointmentAnnexService.cs).
 
